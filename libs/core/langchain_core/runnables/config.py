@@ -1,10 +1,10 @@
-"""Configuration utilities for `Runnable` objects."""
+"""Runnable 对象的配置工具。"""
 
 from __future__ import annotations
 
 import asyncio
 
-# Cannot move uuid to TYPE_CHECKING as RunnableConfig is used in Pydantic models
+# 不能将 uuid 移到 TYPE_CHECKING 中，因为 RunnableConfig 在 Pydantic 模型中使用
 import uuid  # noqa: TC003
 import warnings
 from collections.abc import Awaitable, Callable, Generator, Iterable, Iterator, Sequence
@@ -37,86 +37,83 @@ if TYPE_CHECKING:
         CallbackManagerForChainRun,
     )
 else:
-    # Pydantic validates through typed dicts, but
-    # the callbacks need forward refs updated
+    # Pydantic 通过类型字典验证，但回调需要前向引用更新
     Callbacks = list | Any | None
 
 
 class EmptyDict(TypedDict, total=False):
-    """Empty dict type."""
+    """空字典类型。"""
 
 
 class RunnableConfig(TypedDict, total=False):
-    """Configuration for a `Runnable`.
+    """可运行单元的配置。
 
-    !!! note Custom values
+    !!! note 自定义值
 
-        The `TypedDict` has `total=False` set intentionally to:
+        `TypedDict` 特意设置 `total=False` 以：
 
-        - Allow partial configs to be created and merged together via `merge_configs`
-        - Support config propagation from parent to child runnables via
-            `var_child_runnable_config` (a `ContextVar` that automatically passes
-            config down the call stack without explicit parameter passing), where
-            configs are merged rather than replaced
+        - 允许创建部分配置并通过 `merge_configs` 合并
+        - 支持配置从父可运行单元传播到子可运行单元（通过
+            `var_child_runnable_config`，这是一个 `ContextVar`，会自动传递
+            配置到调用栈下方而无需显式参数传递），配置是合并而非替换
 
         !!! example
 
             ```python
-            # Parent sets tags
+            # 父级设置标签
             chain.invoke(input, config={"tags": ["parent"]})
-            # Child automatically inherits and can add:
+            # 子级自动继承并可添加：
             # ensure_config({"tags": ["child"]}) -> {"tags": ["parent", "child"]}
             ```
     """
 
     tags: list[str]
-    """Tags for this call and any sub-calls (e.g. a Chain calling an LLM).
+    """此次调用及所有子调用的标签（例如链调用 LLM）。
 
-    You can use these to filter calls.
+    可用于过滤调用。
     """
 
     metadata: dict[str, Any]
-    """Metadata for this call and any sub-calls (e.g. a Chain calling an LLM).
+    """此次调用及所有子调用的元数据（例如链调用 LLM）。
 
-    Keys should be strings, values should be JSON-serializable.
+    键应该是字符串，值应该是 JSON 可序列化的。
     """
 
     callbacks: Callbacks
-    """Callbacks for this call and any sub-calls (e.g. a Chain calling an LLM).
+    """此次调用及所有子调用的回调（例如链调用 LLM）。
 
-    Tags are passed to all callbacks, metadata is passed to handle*Start callbacks.
+    标签会传递给所有回调，元数据会传递给 handle*Start 回调。
     """
 
     run_name: str
-    """Name for the tracer run for this call.
+    """此次调用的追踪器运行名称。
 
-    Defaults to the name of the class."""
+    默认为类名。
+    """
 
     max_concurrency: int | None
-    """Maximum number of parallel calls to make.
+    """最大并行调用数。
 
-    If not provided, defaults to `ThreadPoolExecutor`'s default.
+    如果未提供，默认为 `ThreadPoolExecutor` 的默认值。
     """
 
     recursion_limit: int
-    """Maximum number of times a call can recurse.
+    """调用可以递归的最大次数。
 
-    If not provided, defaults to `25`.
+    如果未提供，默认为 `25`。
     """
 
     configurable: dict[str, Any]
-    """Runtime values for attributes previously made configurable on this `Runnable`,
-    or sub-`Runnable` objects, through `configurable_fields` or
-    `configurable_alternatives`.
+    """此前在此 Runnable 或子 Runnable 上通过 `configurable_fields` 或
+    `configurable_alternatives` 设置为可配置的属性的运行时值。
 
-    Check `output_schema` for a description of the attributes that have been made
-    configurable.
+    有关已配置属性的描述，请查看 `output_schema`。
     """
 
     run_id: uuid.UUID | None
-    """Unique identifier for the tracer run for this call.
+    """此次调用的追踪器运行唯一标识符。
 
-    If not provided, a new UUID will be generated.
+    如果未提供，将生成一个新的 UUID。
     """
 
 
@@ -139,15 +136,14 @@ COPIABLE_KEYS = [
 ]
 
 
-# Users are expected to use the `context` API with a context object
-# (which does not get traced)
+# 用户应使用带有上下文对象的 `context` API（不会被追踪）
 CONFIGURABLE_TO_TRACING_METADATA_EXCLUDED_KEYS = frozenset(("api_key",))
 
 
 def _get_langsmith_inheritable_metadata_from_config(
     config: RunnableConfig,
 ) -> dict[str, Any] | None:
-    """Get LangSmith-only inheritable metadata defaults derived from config."""
+    """从配置中获取仅 LangSmith 可继承的元数据默认值。"""
     configurable = config.get("configurable") or {}
     metadata = {
         key: value
@@ -168,19 +164,19 @@ var_child_runnable_config: ContextVar[RunnableConfig | None] = ContextVar(
 )
 
 
-# This is imported and used in langgraph, so don't break.
+# 此模块在 langgraph 中被导入和使用，所以不要破坏它。
 def _set_config_context(
     config: RunnableConfig,
 ) -> tuple[Token[RunnableConfig | None], dict[str, Any] | None]:
-    """Set the child Runnable config + tracing context.
+    """设置子 Runnable 配置 + 追踪上下文。
 
-    Args:
-        config: The config to set.
+    参数:
+        config: 要设置的配置。
 
-    Returns:
-        The token to reset the config and the previous tracing context.
+    返回:
+        重置配置的令牌和先前的追踪上下文。
     """
-    # Deferred to avoid importing langsmith at module level (~132ms).
+    # 延迟导入以避免在模块级别导入 langsmith（约 132ms）。
     from langsmith.run_helpers import (  # noqa: PLC0415
         _set_tracing_context,
         get_tracing_context,
@@ -214,15 +210,15 @@ def _set_config_context(
 
 @contextmanager
 def set_config_context(config: RunnableConfig) -> Generator[Context, None, None]:
-    """Set the child Runnable config + tracing context.
+    """设置子 Runnable 配置 + 追踪上下文。
 
-    Args:
-        config: The config to set.
+    参数:
+        config: 要设置的配置。
 
-    Yields:
-        The config context.
+    产出:
+        配置上下文。
     """
-    # Deferred to avoid importing langsmith at module level (~132ms).
+    # 延迟导入以避免在模块级别导入 langsmith（约 132ms）。
     from langsmith.run_helpers import _set_tracing_context  # noqa: PLC0415
 
     ctx = copy_context()
@@ -245,13 +241,13 @@ def set_config_context(config: RunnableConfig) -> Generator[Context, None, None]
 
 
 def ensure_config(config: RunnableConfig | None = None) -> RunnableConfig:
-    """Ensure that a config is a dict with all keys present.
+    """确保配置是一个包含所有键的字典。
 
-    Args:
-        config: The config to ensure.
+    参数:
+        config: 要确保的配置。
 
-    Returns:
-        The ensured config.
+    返回:
+        确保后的配置。
     """
     empty = RunnableConfig(
         tags=[],
@@ -303,20 +299,19 @@ def ensure_config(config: RunnableConfig | None = None) -> RunnableConfig:
 def get_config_list(
     config: RunnableConfig | Sequence[RunnableConfig] | None, length: int
 ) -> list[RunnableConfig]:
-    """Get a list of configs from a single config or a list of configs.
+    """从单个配置或配置列表获取配置列表。
 
-     It is useful for subclasses overriding batch() or abatch().
+    这对于子类重写 batch() 或 abatch() 很有用。
 
-    Args:
-        config: The config or list of configs.
-        length: The length of the list.
+    参数:
+        config: 配置或配置列表。
+        length: 列表的长度。
 
-    Returns:
-        The list of configs.
+    返回:
+        配置列表。
 
-    Raises:
-        ValueError: If the length of the list is not equal to the length of the inputs.
-
+    异常:
+        ValueError: 如果列表长度与输入长度不相等。
     """
     if length < 0:
         msg = f"length must be >= 0, but got {length}"
@@ -355,23 +350,23 @@ def patch_config(
     run_name: str | None = None,
     configurable: dict[str, Any] | None = None,
 ) -> RunnableConfig:
-    """Patch a config with new values.
+    """用新值修补配置。
 
-    Args:
-        config: The config to patch.
-        callbacks: The callbacks to set.
-        recursion_limit: The recursion limit to set.
-        max_concurrency: The max concurrency to set.
-        run_name: The run name to set.
-        configurable: The configurable to set.
+    参数:
+        config: 要修补的配置。
+        callbacks: 要设置的回调。
+        recursion_limit: 要设置的递归限制。
+        max_concurrency: 要设置的最大并发数。
+        run_name: 要设置的运行名称。
+        configurable: 要设置的可配置项。
 
-    Returns:
-        The patched config.
+    返回:
+        修补后的配置。
     """
     config = ensure_config(config)
     if callbacks is not None:
-        # If we're replacing callbacks, we need to unset run_name
-        # As that should apply only to the same run as the original callbacks
+        # 如果我们要替换回调，需要取消设置 run_name
+        # 因为它应该只适用于与原始回调相同的运行
         config["callbacks"] = callbacks
         if "run_name" in config:
             del config["run_name"]
@@ -389,17 +384,17 @@ def patch_config(
 
 
 def merge_configs(*configs: RunnableConfig | None) -> RunnableConfig:
-    """Merge multiple configs into one.
+    """将多个配置合并为一个。
 
-    Args:
-        *configs: The configs to merge.
+    参数:
+        *configs: 要合并的配置。
 
-    Returns:
-        The merged config.
+    返回:
+        合并后的配置。
     """
     base: RunnableConfig = {}
-    # Even though the keys aren't literals, this is correct
-    # because both dicts are the same type
+    # 即使键不是字面量，这也是正确的
+    # 因为两个字典是相同类型
     for config in (ensure_config(c) for c in configs if c is not None):
         for key in config:
             if key == "metadata":
@@ -419,21 +414,21 @@ def merge_configs(*configs: RunnableConfig | None) -> RunnableConfig:
             elif key == "callbacks":
                 base_callbacks = base.get("callbacks")
                 these_callbacks = config["callbacks"]
-                # callbacks can be either None, list[handler] or manager
-                # so merging two callbacks values has 6 cases
+                # 回调可以是 None、list[handler] 或 manager
+                # 所以合并两个回调值有 6 种情况
                 if isinstance(these_callbacks, list):
                     if base_callbacks is None:
                         base["callbacks"] = these_callbacks.copy()
                     elif isinstance(base_callbacks, list):
                         base["callbacks"] = base_callbacks + these_callbacks
                     else:
-                        # base_callbacks is a manager
+                        # base_callbacks 是一个 manager
                         mngr = base_callbacks.copy()
                         for callback in these_callbacks:
                             mngr.add_handler(callback, inherit=True)
                         base["callbacks"] = mngr
                 elif these_callbacks is not None:
-                    # these_callbacks is a manager
+                    # these_callbacks 是一个 manager
                     if base_callbacks is None:
                         base["callbacks"] = these_callbacks.copy()
                     elif isinstance(base_callbacks, list):
@@ -442,7 +437,7 @@ def merge_configs(*configs: RunnableConfig | None) -> RunnableConfig:
                             mngr.add_handler(callback, inherit=True)
                         base["callbacks"] = mngr
                     else:
-                        # base_callbacks is also a manager
+                        # base_callbacks 也是一个 manager
                         base["callbacks"] = base_callbacks.merge(these_callbacks)
             elif key == "recursion_limit":
                 if config["recursion_limit"] != DEFAULT_RECURSION_LIMIT:
@@ -464,17 +459,17 @@ def call_func_with_variable_args(
     run_manager: CallbackManagerForChainRun | None = None,
     **kwargs: Any,
 ) -> Output:
-    """Call function that may optionally accept a run_manager and/or config.
+    """调用可以可选接受 run_manager 和/或 config 的函数。
 
-    Args:
-        func: The function to call.
-        input: The input to the function.
-        config: The config to pass to the function.
-        run_manager: The run manager to pass to the function.
-        **kwargs: The keyword arguments to pass to the function.
+    参数:
+        func: 要调用的函数。
+        input: 函数的输入。
+        config: 要传递给函数的配置。
+        run_manager: 要传递给函数的运行管理器。
+        **kwargs: 要传递给函数的关键字参数。
 
-    Returns:
-        The output of the function.
+    返回:
+        函数的输出。
     """
     if accepts_config(func):
         if run_manager is not None:
@@ -498,17 +493,17 @@ def acall_func_with_variable_args(
     run_manager: AsyncCallbackManagerForChainRun | None = None,
     **kwargs: Any,
 ) -> Awaitable[Output]:
-    """Async call function that may optionally accept a run_manager and/or config.
+    """异步调用可以可选接受 run_manager 和/或 config 的函数。
 
-    Args:
-        func: The function to call.
-        input: The input to the function.
-        config: The config to pass to the function.
-        run_manager: The run manager to pass to the function.
-        **kwargs: The keyword arguments to pass to the function.
+    参数:
+        func: 要调用的函数。
+        input: 函数的输入。
+        config: 要传递给函数的配置。
+        run_manager: 要传递给函数的运行管理器。
+        **kwargs: 要传递给函数的关键字参数。
 
-    Returns:
-        The output of the function.
+    返回:
+        函数的输出。
     """
     if accepts_config(func):
         if run_manager is not None:
@@ -521,13 +516,13 @@ def acall_func_with_variable_args(
 
 
 def get_callback_manager_for_config(config: RunnableConfig) -> CallbackManager:
-    """Get a callback manager for a config.
+    """获取配置的回调管理器。
 
-    Args:
-        config: The config.
+    参数:
+        config: 配置。
 
-    Returns:
-        The callback manager.
+    返回:
+        回调管理器。
     """
     return CallbackManager.configure(
         inheritable_callbacks=config.get("callbacks"),
@@ -542,13 +537,13 @@ def get_callback_manager_for_config(config: RunnableConfig) -> CallbackManager:
 def get_async_callback_manager_for_config(
     config: RunnableConfig,
 ) -> AsyncCallbackManager:
-    """Get an async callback manager for a config.
+    """获取配置的异步回调管理器。
 
-    Args:
-        config: The config.
+    参数:
+        config: 配置。
 
-    Returns:
-        The async callback manager.
+    返回:
+        异步回调管理器。
     """
     return AsyncCallbackManager.configure(
         inheritable_callbacks=config.get("callbacks"),
@@ -565,7 +560,7 @@ T = TypeVar("T")
 
 
 class ContextThreadPoolExecutor(ThreadPoolExecutor):
-    """ThreadPoolExecutor that copies the context to the child thread."""
+    """复制上下文到子线程的 ThreadPoolExecutor。"""
 
     def submit(  # type: ignore[override]
         self,
@@ -573,15 +568,15 @@ class ContextThreadPoolExecutor(ThreadPoolExecutor):
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> Future[T]:
-        """Submit a function to the executor.
+        """向执行器提交函数。
 
-        Args:
-            func: The function to submit.
-            *args: The positional arguments to the function.
-            **kwargs: The keyword arguments to the function.
+        参数:
+            func: 要提交的函数。
+            *args: 函数的位置参数。
+            **kwargs: 函数的关键字参数。
 
-        Returns:
-            The future for the function.
+        返回:
+            函数的 Future。
         """
         return super().submit(
             cast("Callable[..., T]", partial(copy_context().run, func, *args, **kwargs))
@@ -593,16 +588,16 @@ class ContextThreadPoolExecutor(ThreadPoolExecutor):
         *iterables: Iterable[Any],
         **kwargs: Any,
     ) -> Iterator[T]:
-        """Map a function to multiple iterables.
+        """将函数映射到多个可迭代对象。
 
-        Args:
-            fn: The function to map.
-            *iterables: The iterables to map over.
-            timeout: The timeout for the map.
-            chunksize: The chunksize for the map.
+        参数:
+            fn: 要映射的函数。
+            *iterables: 要映射的可迭代对象。
+            timeout: 映射的超时时间。
+            chunksize: 映射的块大小。
 
-        Returns:
-            The iterator for the mapped function.
+        返回:
+            映射函数的迭代器。
         """
         contexts = [copy_context() for _ in range(len(iterables[0]))]  # type: ignore[arg-type]
 
@@ -620,13 +615,13 @@ class ContextThreadPoolExecutor(ThreadPoolExecutor):
 def get_executor_for_config(
     config: RunnableConfig | None,
 ) -> Generator[Executor, None, None]:
-    """Get an executor for a config.
+    """获取配置的执行器。
 
-    Args:
-        config: The config.
+    参数:
+        config: 配置。
 
-    Yields:
-        The executor.
+    产出:
+        执行器。
     """
     config = config or {}
     with ContextThreadPoolExecutor(
@@ -641,29 +636,29 @@ async def run_in_executor(
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> T:
-    """Run a function in an executor.
+    """在执行器中运行函数。
 
-    Args:
-        executor_or_config: The executor or config to run in.
-        func: The function.
-        *args: The positional arguments to the function.
-        **kwargs: The keyword arguments to the function.
+    参数:
+        executor_or_config: 要运行所在的执行器或配置。
+        func: 函数。
+        *args: 函数的位置参数。
+        **kwargs: 函数的关键字参数。
 
-    Returns:
-        The output of the function.
+    返回:
+        函数的输出。
     """
 
     def wrapper() -> T:
         try:
             return func(*args, **kwargs)
         except StopIteration as exc:
-            # StopIteration can't be set on an asyncio.Future
-            # it raises a TypeError and leaves the Future pending forever
-            # so we need to convert it to a RuntimeError
+            # StopIteration 无法设置在 asyncio.Future 上
+            # 它会引发 TypeError 并使 Future 保持待处理状态
+            # 所以我们需要将其转换为 RuntimeError
             raise RuntimeError from exc
 
     if executor_or_config is None or isinstance(executor_or_config, dict):
-        # Use default executor with context copied from current context
+        # 使用默认执行器，上下文中复制自当前上下文
         return await asyncio.get_running_loop().run_in_executor(
             None,
             cast("Callable[..., T]", partial(copy_context().run, wrapper)),

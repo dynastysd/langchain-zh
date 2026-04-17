@@ -1,4 +1,4 @@
-"""Base classes and utilities for `Runnable` objects."""
+"""`Runnable` 可运行单元的基础类和工具函数。"""
 
 from __future__ import annotations
 
@@ -122,50 +122,47 @@ _RUNNABLE_GENERIC_NUM_ARGS = 2  # Input and Output
 
 
 class Runnable(ABC, Generic[Input, Output]):
-    """A unit of work that can be invoked, batched, streamed, transformed and composed.
+    """可运行单元（Runnable），可以被调用、批量调用、流式调用、转换和组合。
 
-    Key Methods
+    核心方法
     ===========
 
-    - `invoke`/`ainvoke`: Transforms a single input into an output.
-    - `batch`/`abatch`: Efficiently transforms multiple inputs into outputs.
-    - `stream`/`astream`: Streams output from a single input as it's produced.
-    - `astream_log`: Streams output and selected intermediate results from an
-        input.
+    - `invoke`/`ainvoke`：将单个输入转换为输出。
+    - `batch`/`abatch`：高效地将多个输入转换为输出。
+    - `stream`/`astream`：从单个输入中流式生成输出。
+    - `astream_log`：流式输出以及输入的选定中间结果。
 
-    Built-in optimizations:
+    内置优化：
 
-    - **Batch**: By default, batch runs invoke() in parallel using a thread pool
-        executor. Override to optimize batching.
+    - **批量调用（Batch）**：默认情况下，batch 使用线程池并发执行 invoke()。
+        可通过重写来优化批量调用性能。
 
-    - **Async**: Methods with `'a'` prefix are asynchronous. By default, they execute
-        the sync counterpart using asyncio's thread pool.
-        Override for native async.
+    - **异步**：带有 'a' 前缀的方法是异步的。默认情况下，它们使用 asyncio
+        的线程池执行同步对应方法。可通过重写实现原生异步。
 
-    All methods accept an optional config argument, which can be used to configure
-    execution, add tags and metadata for tracing and debugging etc.
+    所有方法都接受一个可选的 config 参数，可用于配置执行、添加标签和元数据
+    以便追踪和调试等。
 
-    Runnables expose schematic information about their input, output and config via
-    the `input_schema` property, the `output_schema` property and `config_schema`
-    method.
+    可运行单元通过 `input_schema` 属性、`output_schema` 属性和
+    `config_schema` 方法来暴露关于其输入、输出和配置的概要信息。
 
-    Composition
+    组合
     ===========
 
-    Runnable objects can be composed together to create chains in a declarative way.
+    可运行单元可以以声明式方式组合在一起创建链。
 
-    Any chain constructed this way will automatically have sync, async, batch, and
-    streaming support.
+    以这种方式构建的任何链都会自动支持同步、异步、批量调用和流式调用。
 
-    The main composition primitives are `RunnableSequence` and `RunnableParallel`.
+    主要的组合原语是 `RunnableSequence`（顺序运行单元）和
+    `RunnableParallel`（并行运行单元）。
 
-    **`RunnableSequence`** invokes a series of runnables sequentially, with
-    one Runnable's output serving as the next's input. Construct using
-    the `|` operator or by passing a list of runnables to `RunnableSequence`.
+    **`RunnableSequence`**（顺序运行单元）按顺序调用一系列可运行单元，
+    前一个的输出作为下一个的输入。使用 `|` 运算符或将要组合的可运行单元
+    列表传递给 `RunnableSequence` 来构建。
 
-    **`RunnableParallel`** invokes runnables concurrently, providing the same input
-    to each. Construct it using a dict literal within a sequence or by passing a
-    dict to `RunnableParallel`.
+    **`RunnableParallel`**（并行运行单元）并发调用多个可运行单元，
+    向每个提供相同的输入。使用序列中的字典字面量或将字典传递给
+    `RunnableParallel` 来构建。
 
 
     For example,
@@ -256,28 +253,26 @@ class Runnable(ABC, Generic[Input, Output]):
     """
 
     name: str | None
-    """The name of the `Runnable`. Used for debugging and tracing."""
+    """可运行单元（Runnable）的名称。用于调试和追踪。"""
 
     def get_name(self, suffix: str | None = None, *, name: str | None = None) -> str:
-        """Get the name of the `Runnable`.
+        """获取可运行单元（Runnable）的名称。
 
         Args:
-            suffix: An optional suffix to append to the name.
-            name: An optional name to use instead of the `Runnable`'s name.
+            suffix: 要附加到名称的可选后缀。
+            name: 可选的自定义名称，用于替代可运行单元（Runnable）的名称。
 
         Returns:
-            The name of the `Runnable`.
+            可运行单元（Runnable）的名称。
         """
         if name:
             name_ = name
         elif hasattr(self, "name") and self.name:
             name_ = self.name
         else:
-            # Here we handle a case where the runnable subclass is also a pydantic
-            # model.
+            # 这里处理可运行单元子类同时也是 pydantic 模型的情况。
             cls = self.__class__
-            # Then it's a pydantic sub-class, and we have to check
-            # whether it's a generic, and if so recover the original name.
+            # 然后检查它是否是泛型，如果是则恢复原始名称。
             if (
                 hasattr(
                     cls,
@@ -298,16 +293,16 @@ class Runnable(ABC, Generic[Input, Output]):
 
     @property
     def InputType(self) -> type[Input]:  # noqa: N802
-        """Input type.
+        """输入类型。
 
-        The type of input this `Runnable` accepts specified as a type annotation.
+        此可运行单元（Runnable）接受的输入类型，指定为类型注解。
 
         Raises:
-            TypeError: If the input type cannot be inferred.
+            TypeError: 如果无法推断输入类型。
         """
-        # First loop through all parent classes and if any of them is
-        # a Pydantic model, we will pick up the generic parameterization
-        # from that model via the __pydantic_generic_metadata__ attribute.
+        # 首先遍历所有父类，如果其中任何一个是 Pydantic 模型，
+        # 我们将通过 __pydantic_generic_metadata__ 属性
+        # 从该模型中获取泛型参数化信息。
         for base in self.__class__.mro():
             if hasattr(base, "__pydantic_generic_metadata__"):
                 metadata = base.__pydantic_generic_metadata__
@@ -317,9 +312,8 @@ class Runnable(ABC, Generic[Input, Output]):
                 ):
                     return cast("type[Input]", metadata["args"][0])
 
-        # If we didn't find a Pydantic model in the parent classes,
-        # then loop through __orig_bases__. This corresponds to
-        # Runnables that are not pydantic models.
+        # 如果在父类中没有找到 Pydantic 模型，
+        # 则遍历 __orig_bases__。这对应于不是 pydantic 模型的可运行单元。
         for cls in self.__class__.__orig_bases__:  # type: ignore[attr-defined]
             type_args = get_args(cls)
             if type_args and len(type_args) == _RUNNABLE_GENERIC_NUM_ARGS:
@@ -333,15 +327,14 @@ class Runnable(ABC, Generic[Input, Output]):
 
     @property
     def OutputType(self) -> type[Output]:  # noqa: N802
-        """Output Type.
+        """输出类型。
 
-        The type of output this `Runnable` produces specified as a type annotation.
+        此可运行单元（Runnable）产生的输出类型，指定为类型注解。
 
         Raises:
-            TypeError: If the output type cannot be inferred.
+            TypeError: 如果无法推断输出类型。
         """
-        # First loop through bases -- this will help generic
-        # any pydantic models.
+        # 首先遍历基类——这将帮助处理任何 pydantic 模型的泛型。
         for base in self.__class__.mro():
             if hasattr(base, "__pydantic_generic_metadata__"):
                 metadata = base.__pydantic_generic_metadata__
@@ -364,26 +357,26 @@ class Runnable(ABC, Generic[Input, Output]):
 
     @property
     def input_schema(self) -> type[BaseModel]:
-        """The type of input this `Runnable` accepts specified as a Pydantic model."""
+        """此可运行单元（Runnable）接受的输入类型，指定为 Pydantic 模型。"""
         return self.get_input_schema()
 
     def get_input_schema(
         self,
         config: RunnableConfig | None = None,
     ) -> type[BaseModel]:
-        """Get a Pydantic model that can be used to validate input to the `Runnable`.
+        """获取一个可用于验证可运行单元（Runnable）输入的 Pydantic 模型。
 
-        `Runnable` objects that leverage the `configurable_fields` and
-        `configurable_alternatives` methods will have a dynamic input schema that
-        depends on which configuration the `Runnable` is invoked with.
+        使用了 `configurable_fields` 和 `configurable_alternatives` 方法的
+        可运行单元（Runnable）对象会有动态输入模式，取决于调用该可运行单元时
+        使用的配置。
 
-        This method allows to get an input schema for a specific configuration.
+        此方法允许获取特定配置的输入模式。
 
         Args:
-            config: A config to use when generating the schema.
+            config: 生成模式时使用的配置。
 
         Returns:
-            A Pydantic model that can be used to validate input.
+            可用于验证输入的 Pydantic 模型。
         """
         _ = config
         root_type = self.InputType
@@ -398,26 +391,24 @@ class Runnable(ABC, Generic[Input, Output]):
         return create_model_v2(
             self.get_name("Input"),
             root=root_type,
-            # create model needs access to appropriate type annotations to be
-            # able to construct the Pydantic model.
-            # When we create the model, we pass information about the namespace
-            # where the model is being created, so the type annotations can
-            # be resolved correctly as well.
-            # self.__class__.__module__ handles the case when the Runnable is
-            # being sub-classed in a different module.
+            # 创建模型需要访问适当的类型注解才能构造 Pydantic 模型。
+            # 当创建模型时，我们传递有关模型创建所在命名空间的信息，
+            # 以便类型注解也能被正确解析。
+            # self.__class__.__module__ 处理可运行单元在不同的模块中
+            # 被子类化的情况。
             module_name=self.__class__.__module__,
         )
 
     def get_input_jsonschema(
         self, config: RunnableConfig | None = None
     ) -> dict[str, Any]:
-        """Get a JSON schema that represents the input to the `Runnable`.
+        """获取表示可运行单元（Runnable）输入的 JSON 模式。
 
         Args:
-            config: A config to use when generating the schema.
+            config: 生成模式时使用的配置。
 
         Returns:
-            A JSON schema that represents the input to the `Runnable`.
+            表示可运行单元（Runnable）输入的 JSON 模式。
 
         Example:
             ```python
@@ -440,9 +431,9 @@ class Runnable(ABC, Generic[Input, Output]):
 
     @property
     def output_schema(self) -> type[BaseModel]:
-        """Output schema.
+        """输出模式。
 
-        The type of output this `Runnable` produces specified as a Pydantic model.
+        此可运行单元（Runnable）产生的输出类型，指定为 Pydantic 模型。
         """
         return self.get_output_schema()
 
@@ -450,19 +441,19 @@ class Runnable(ABC, Generic[Input, Output]):
         self,
         config: RunnableConfig | None = None,
     ) -> type[BaseModel]:
-        """Get a Pydantic model that can be used to validate output to the `Runnable`.
+        """获取一个可用于验证可运行单元（Runnable）输出的 Pydantic 模型。
 
-        `Runnable` objects that leverage the `configurable_fields` and
-        `configurable_alternatives` methods will have a dynamic output schema that
-        depends on which configuration the `Runnable` is invoked with.
+        使用了 `configurable_fields` 和 `configurable_alternatives` 方法的
+        可运行单元（Runnable）对象会有动态输出模式，取决于调用该可运行单元时
+        使用的配置。
 
-        This method allows to get an output schema for a specific configuration.
+        此方法允许获取特定配置的输出模式。
 
         Args:
-            config: A config to use when generating the schema.
+            config: 生成模式时使用的配置。
 
         Returns:
-            A Pydantic model that can be used to validate output.
+            可用于验证输出的 Pydantic 模型。
         """
         _ = config
         root_type = self.OutputType
@@ -477,26 +468,24 @@ class Runnable(ABC, Generic[Input, Output]):
         return create_model_v2(
             self.get_name("Output"),
             root=root_type,
-            # create model needs access to appropriate type annotations to be
-            # able to construct the Pydantic model.
-            # When we create the model, we pass information about the namespace
-            # where the model is being created, so the type annotations can
-            # be resolved correctly as well.
-            # self.__class__.__module__ handles the case when the Runnable is
-            # being sub-classed in a different module.
+            # 创建模型需要访问适当的类型注解才能构造 Pydantic 模型。
+            # 当创建模型时，我们传递有关模型创建所在命名空间的信息，
+            # 以便类型注解也能被正确解析。
+            # self.__class__.__module__ 处理可运行单元在不同的模块中
+            # 被子类化的情况。
             module_name=self.__class__.__module__,
         )
 
     def get_output_jsonschema(
         self, config: RunnableConfig | None = None
     ) -> dict[str, Any]:
-        """Get a JSON schema that represents the output of the `Runnable`.
+        """获取表示可运行单元（Runnable）输出的 JSON 模式。
 
         Args:
-            config: A config to use when generating the schema.
+            config: 生成模式时使用的配置。
 
         Returns:
-            A JSON schema that represents the output of the `Runnable`.
+            表示可运行单元（Runnable）输出的 JSON 模式。
 
         Example:
             ```python
@@ -519,20 +508,20 @@ class Runnable(ABC, Generic[Input, Output]):
 
     @property
     def config_specs(self) -> list[ConfigurableFieldSpec]:
-        """List configurable fields for this `Runnable`."""
+        """此可运行单元（Runnable）的可配置字段列表。"""
         return []
 
     def config_schema(self, *, include: Sequence[str] | None = None) -> type[BaseModel]:
-        """The type of config this `Runnable` accepts specified as a Pydantic model.
+        """此可运行单元（Runnable）接受的配置类型，指定为 Pydantic 模型。
 
-        To mark a field as configurable, see the `configurable_fields`
-        and `configurable_alternatives` methods.
+        要将字段标记为可配置的，请参阅 `configurable_fields`
+        和 `configurable_alternatives` 方法。
 
         Args:
-            include: A list of fields to include in the config schema.
+            include: 要包含在配置模式中的字段列表。
 
         Returns:
-            A Pydantic model that can be used to validate config.
+            可用于验证配置的 Pydantic 模型。
 
         """
         include = include or []
@@ -555,6 +544,7 @@ class Runnable(ABC, Generic[Input, Output]):
         )
 
         # Many need to create a typed dict instead to implement NotRequired!
+        # 需要创建一个类型字典来实现 NotRequired！
         all_fields = {
             **({"configurable": (configurable, None)} if configurable else {}),
             **{
@@ -568,13 +558,13 @@ class Runnable(ABC, Generic[Input, Output]):
     def get_config_jsonschema(
         self, *, include: Sequence[str] | None = None
     ) -> dict[str, Any]:
-        """Get a JSON schema that represents the config of the `Runnable`.
+        """获取表示可运行单元（Runnable）配置的 JSON 模式。
 
         Args:
-            include: A list of fields to include in the config schema.
+            include: 要包含在配置模式中的字段列表。
 
         Returns:
-            A JSON schema that represents the config of the `Runnable`.
+            表示可运行单元（Runnable）配置的 JSON 模式。
 
         !!! version-added "Added in `langchain-core` 0.3.0"
 
@@ -582,8 +572,8 @@ class Runnable(ABC, Generic[Input, Output]):
         return self.config_schema(include=include).model_json_schema()
 
     def get_graph(self, config: RunnableConfig | None = None) -> Graph:
-        """Return a graph representation of this `Runnable`."""
-        # Import locally to prevent circular import
+        """返回此可运行单元（Runnable）的图形表示。"""
+        # 在本地导入以避免循环导入
         from langchain_core.runnables.graph import Graph  # noqa: PLC0415
 
         graph = Graph()
@@ -605,8 +595,8 @@ class Runnable(ABC, Generic[Input, Output]):
     def get_prompts(
         self, config: RunnableConfig | None = None
     ) -> list[BasePromptTemplate]:
-        """Return a list of prompts used by this `Runnable`."""
-        # Import locally to prevent circular import
+        """返回此可运行单元（Runnable）使用的提示模板列表。"""
+        # 在本地导入以避免循环导入
         from langchain_core.prompts.base import BasePromptTemplate  # noqa: PLC0415
 
         return [
@@ -623,16 +613,16 @@ class Runnable(ABC, Generic[Input, Output]):
         | Callable[[Any], Other]
         | Mapping[str, Runnable[Any, Other] | Callable[[Any], Other] | Any],
     ) -> RunnableSerializable[Input, Other]:
-        """Runnable "or" operator.
+        """可运行单元（Runnable）的"或"运算符。
 
-        Compose this `Runnable` with another object to create a
-        `RunnableSequence`.
+        将此可运行单元（Runnable）与另一个对象组合以创建
+        顺序运行单元（RunnableSequence）。
 
         Args:
-            other: Another `Runnable` or a `Runnable`-like object.
+            other: 另一个可运行单元（Runnable）或类似可运行单元的对象。
 
         Returns:
-            A new `Runnable`.
+            新的可运行单元（Runnable）。
         """
         return RunnableSequence(self, coerce_to_runnable(other))
 
@@ -644,16 +634,16 @@ class Runnable(ABC, Generic[Input, Output]):
         | Callable[[Other], Any]
         | Mapping[str, Runnable[Other, Any] | Callable[[Other], Any] | Any],
     ) -> RunnableSerializable[Other, Output]:
-        """Runnable "reverse-or" operator.
+        """可运行单元（Runnable）的"反向或"运算符。
 
-        Compose this `Runnable` with another object to create a
-        `RunnableSequence`.
+        将此可运行单元（Runnable）与另一个对象组合以创建
+        顺序运行单元（RunnableSequence）。
 
         Args:
-            other: Another `Runnable` or a `Runnable`-like object.
+            other: 另一个可运行单元（Runnable）或类似可运行单元的对象。
 
         Returns:
-            A new `Runnable`.
+            新的可运行单元（Runnable）。
         """
         return RunnableSequence(coerce_to_runnable(other), self)
 
@@ -662,12 +652,12 @@ class Runnable(ABC, Generic[Input, Output]):
         *others: Runnable[Any, Other] | Callable[[Any], Other],
         name: str | None = None,
     ) -> RunnableSerializable[Input, Other]:
-        """Pipe `Runnable` objects.
+        """管道连接（Pipe）可运行单元（Runnable）对象。
 
-        Compose this `Runnable` with `Runnable`-like objects to make a
-        `RunnableSequence`.
+        将此可运行单元（Runnable）与类似可运行单元的对象组合以创建
+        顺序运行单元（RunnableSequence）。
 
-        Equivalent to `RunnableSequence(self, *others)` or `self | others[0] | ...`
+        等价于 `RunnableSequence(self, *others)` 或 `self | others[0] | ...`
 
         Example:
             ```python
@@ -698,18 +688,18 @@ class Runnable(ABC, Generic[Input, Output]):
             ```
 
         Args:
-            *others: Other `Runnable` or `Runnable`-like objects to compose
-            name: An optional name for the resulting `RunnableSequence`.
+            *others: 要组合的其他可运行单元（Runnable）或类似可运行单元的对象。
+            name: 生成的可运行单元序列（RunnableSequence）的可选名称。
 
         Returns:
-            A new `Runnable`.
+            新的可运行单元（Runnable）。
         """
         return RunnableSequence(self, *others, name=name)
 
     def pick(self, keys: str | list[str]) -> RunnableSerializable[Any, Any]:
-        """Pick keys from the output `dict` of this `Runnable`.
+        """从可运行单元（Runnable）输出字典中选择键。
 
-        !!! example "Pick a single key"
+        !!! example "选择单个键"
 
             ```python
             import json
@@ -728,7 +718,7 @@ class Runnable(ABC, Generic[Input, Output]):
             # -> [1, 2, 3]
             ```
 
-        !!! example "Pick a list of keys"
+        !!! example "选择键列表"
 
             ```python
             from typing import Any
@@ -758,13 +748,13 @@ class Runnable(ABC, Generic[Input, Output]):
             ```
 
         Args:
-            keys: A key or list of keys to pick from the output dict.
+            keys: 要从输出字典中选择的键或键列表。
 
         Returns:
-            a new `Runnable`.
+            新的可运行单元（Runnable）。
 
         """
-        # Import locally to prevent circular import
+        # 在本地导入以避免循环导入
         from langchain_core.runnables.passthrough import RunnablePick  # noqa: PLC0415
 
         return self | RunnablePick(keys)
@@ -775,7 +765,7 @@ class Runnable(ABC, Generic[Input, Output]):
         | Callable[[dict[str, Any]], Any]
         | Mapping[str, Runnable[dict[str, Any], Any] | Callable[[dict[str, Any]], Any]],
     ) -> RunnableSerializable[Any, Any]:
-        """Assigns new fields to the `dict` output of this `Runnable`.
+        """为可运行单元（Runnable）的字典输出分配新字段。
 
         ```python
         from langchain_core.language_models.fake import FakeStreamingListLLM
@@ -804,19 +794,19 @@ class Runnable(ABC, Generic[Input, Output]):
         ```
 
         Args:
-            **kwargs: A mapping of keys to `Runnable` or `Runnable`-like objects
-                that will be invoked with the entire output dict of this `Runnable`.
+            **kwargs: 键到可运行单元（Runnable）或类似可运行单元对象的映射，
+                它们将使用此可运行单元（Runnable）的整个输出字典来调用。
 
         Returns:
-            A new `Runnable`.
+            新的可运行单元（Runnable）。
 
         """
-        # Import locally to prevent circular import
+        # 在本地导入以避免循环导入
         from langchain_core.runnables.passthrough import RunnableAssign  # noqa: PLC0415
 
         return self | RunnableAssign(RunnableParallel[dict[str, Any]](kwargs))
 
-    """ --- Public API --- """
+    """ --- 公共 API --- """
 
     @abstractmethod
     def invoke(
@@ -825,20 +815,19 @@ class Runnable(ABC, Generic[Input, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any,
     ) -> Output:
-        """Transform a single input into an output.
+        """将单个输入转换为输出。
 
         Args:
-            input: The input to the `Runnable`.
-            config: A config to use when invoking the `Runnable`.
+            input: 可运行单元（Runnable）的输入。
+            config: 调用可运行单元（Runnable）时使用的配置。
 
-                The config supports standard keys like `'tags'`, `'metadata'` for
-                tracing purposes, `'max_concurrency'` for controlling how much work to
-                do in parallel, and other keys.
+                配置支持标准键，如用于追踪目的的 `'tags'`、`'metadata'`，
+                用于控制并发工作量的 `'max_concurrency'` 等。
 
-                Please refer to `RunnableConfig` for more details.
+                详情请参阅 `RunnableConfig`。
 
         Returns:
-            The output of the `Runnable`.
+            可运行单元（Runnable）的输出。
         """
 
     async def ainvoke(
@@ -847,20 +836,19 @@ class Runnable(ABC, Generic[Input, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any,
     ) -> Output:
-        """Transform a single input into an output.
+        """将单个输入转换为输出。
 
         Args:
-            input: The input to the `Runnable`.
-            config: A config to use when invoking the `Runnable`.
+            input: 可运行单元（Runnable）的输入。
+            config: 调用可运行单元（Runnable）时使用的配置。
 
-                The config supports standard keys like `'tags'`, `'metadata'` for
-                tracing purposes, `'max_concurrency'` for controlling how much work to
-                do in parallel, and other keys.
+                配置支持标准键，如用于追踪目的的 `'tags'`、`'metadata'`，
+                用于控制并发工作量的 `'max_concurrency'` 等。
 
-                Please refer to `RunnableConfig` for more details.
+                详情请参阅 `RunnableConfig`。
 
         Returns:
-            The output of the `Runnable`.
+            可运行单元（Runnable）的输出。
         """
         return await run_in_executor(config, self.invoke, input, config, **kwargs)
 
@@ -872,26 +860,25 @@ class Runnable(ABC, Generic[Input, Output]):
         return_exceptions: bool = False,
         **kwargs: Any | None,
     ) -> list[Output]:
-        """Default implementation runs invoke in parallel using a thread pool executor.
+        """默认实现使用线程池执行器并发运行 invoke。
 
-        The default implementation of batch works well for IO bound runnables.
+        默认的批量调用实现适用于 IO 密集型可运行单元。
 
-        Subclasses must override this method if they can batch more efficiently;
-        e.g., if the underlying `Runnable` uses an API which supports a batch mode.
+        如果子类可以更高效地进行批量处理，则必须重写此方法；
+        例如，如果底层可运行单元（Runnable）使用的 API 支持批量模式。
 
         Args:
-            inputs: A list of inputs to the `Runnable`.
-            config: A config to use when invoking the `Runnable`. The config supports
-                standard keys like `'tags'`, `'metadata'` for
-                tracing purposes, `'max_concurrency'` for controlling how much work
-                to do in parallel, and other keys.
+            inputs: 可运行单元（Runnable）的输入列表。
+            config: 调用可运行单元（Runnable）时使用的配置。配置支持
+                标准键，如用于追踪目的的 `'tags'`、`'metadata'`，
+                用于控制并发工作量的 `'max_concurrency'` 等。
 
-                Please refer to `RunnableConfig` for more details.
-            return_exceptions: Whether to return exceptions instead of raising them.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+                详情请参阅 `RunnableConfig`。
+            return_exceptions: 是否返回异常而不是抛出异常。
+            **kwargs: 传递给可运行单元（Runnable）的其他关键字参数。
 
         Returns:
-            A list of outputs from the `Runnable`.
+            可运行单元（Runnable）的输出列表。
         """
         if not inputs:
             return []
@@ -907,7 +894,7 @@ class Runnable(ABC, Generic[Input, Output]):
             else:
                 return self.invoke(input_, config, **kwargs)
 
-        # If there's only one input, don't bother with the executor
+        # 如果只有一个输入，就不需要使用执行器
         if len(inputs) == 1:
             return cast("list[Output]", [invoke(inputs[0], configs[0])])
 
@@ -942,24 +929,23 @@ class Runnable(ABC, Generic[Input, Output]):
         return_exceptions: bool = False,
         **kwargs: Any | None,
     ) -> Iterator[tuple[int, Output | Exception]]:
-        """Run `invoke` in parallel on a list of inputs.
+        """在输入列表上并行运行 `invoke`。
 
-        Yields results as they complete.
+        在完成时生成结果。
 
         Args:
-            inputs: A list of inputs to the `Runnable`.
-            config: A config to use when invoking the `Runnable`.
+            inputs: 可运行单元（Runnable）的输入列表。
+            config: 调用可运行单元（Runnable）时使用的配置。
 
-                The config supports standard keys like `'tags'`, `'metadata'` for
-                tracing purposes, `'max_concurrency'` for controlling how much work to
-                do in parallel, and other keys.
+                配置支持标准键，如用于追踪目的的 `'tags'`、`'metadata'`，
+                用于控制并发工作量的 `'max_concurrency'` 等。
 
-                Please refer to `RunnableConfig` for more details.
-            return_exceptions: Whether to return exceptions instead of raising them.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+                详情请参阅 `RunnableConfig`。
+            return_exceptions: 是否返回异常而不是抛出异常。
+            **kwargs: 传递给可运行单元（Runnable）的其他关键字参数。
 
         Yields:
-            Tuples of the index of the input and the output from the `Runnable`.
+            可运行单元（Runnable）输入的索引和输出的元组。
 
         """
         if not inputs:
@@ -1007,27 +993,26 @@ class Runnable(ABC, Generic[Input, Output]):
         return_exceptions: bool = False,
         **kwargs: Any | None,
     ) -> list[Output]:
-        """Default implementation runs `ainvoke` in parallel using `asyncio.gather`.
+        """默认实现使用 `asyncio.gather` 并行运行 `ainvoke`。
 
-        The default implementation of `batch` works well for IO bound runnables.
+        默认的批量调用实现适用于 IO 密集型可运行单元。
 
-        Subclasses must override this method if they can batch more efficiently;
-        e.g., if the underlying `Runnable` uses an API which supports a batch mode.
+        如果子类可以更高效地进行批量处理，则必须重写此方法；
+        例如，如果底层可运行单元（Runnable）使用的 API 支持批量模式。
 
         Args:
-            inputs: A list of inputs to the `Runnable`.
-            config: A config to use when invoking the `Runnable`.
+            inputs: 可运行单元（Runnable）的输入列表。
+            config: 调用可运行单元（Runnable）时使用的配置。
 
-                The config supports standard keys like `'tags'`, `'metadata'` for
-                tracing purposes, `'max_concurrency'` for controlling how much work to
-                do in parallel, and other keys.
+                配置支持标准键，如用于追踪目的的 `'tags'`、`'metadata'`，
+                用于控制并发工作量的 `'max_concurrency'` 等。
 
-                Please refer to `RunnableConfig` for more details.
-            return_exceptions: Whether to return exceptions instead of raising them.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+                详情请参阅 `RunnableConfig`。
+            return_exceptions: 是否返回异常而不是抛出异常。
+            **kwargs: 传递给可运行单元（Runnable）的其他关键字参数。
 
         Returns:
-            A list of outputs from the `Runnable`.
+            可运行单元（Runnable）的输出列表。
 
         """
         if not inputs:
@@ -1075,31 +1060,30 @@ class Runnable(ABC, Generic[Input, Output]):
         return_exceptions: bool = False,
         **kwargs: Any | None,
     ) -> AsyncIterator[tuple[int, Output | Exception]]:
-        """Run `ainvoke` in parallel on a list of inputs.
+        """在输入列表上并行运行 `ainvoke`。
 
-        Yields results as they complete.
+        在完成时生成结果。
 
         Args:
-            inputs: A list of inputs to the `Runnable`.
-            config: A config to use when invoking the `Runnable`.
+            inputs: 可运行单元（Runnable）的输入列表。
+            config: 调用可运行单元（Runnable）时使用的配置。
 
-                The config supports standard keys like `'tags'`, `'metadata'` for
-                tracing purposes, `'max_concurrency'` for controlling how much work to
-                do in parallel, and other keys.
+                配置支持标准键，如用于追踪目的的 `'tags'`、`'metadata'`，
+                用于控制并发工作量的 `'max_concurrency'` 等。
 
-                Please refer to `RunnableConfig` for more details.
-            return_exceptions: Whether to return exceptions instead of raising them.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+                详情请参阅 `RunnableConfig`。
+            return_exceptions: 是否返回异常而不是抛出异常。
+            **kwargs: 传递给可运行单元（Runnable）的其他关键字参数。
 
         Yields:
-            A tuple of the index of the input and the output from the `Runnable`.
+            可运行单元（Runnable）输入的索引和输出的元组。
 
         """
         if not inputs:
             return
 
         configs = get_config_list(config, len(inputs))
-        # Get max_concurrency from first config, defaulting to None (unlimited)
+        # 从第一个配置中获取 max_concurrency，默认为 None（无限制）
         max_concurrency = configs[0].get("max_concurrency") if configs else None
         semaphore = asyncio.Semaphore(max_concurrency) if max_concurrency else None
 
@@ -1133,17 +1117,17 @@ class Runnable(ABC, Generic[Input, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> Iterator[Output]:
-        """Default implementation of `stream`, which calls `invoke`.
+        """`stream` 的默认实现，调用 `invoke`。
 
-        Subclasses must override this method if they support streaming output.
+        如果子类支持流式输出，则必须重写此方法。
 
         Args:
-            input: The input to the `Runnable`.
-            config: The config to use for the `Runnable`.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+            input: 可运行单元（Runnable）的输入。
+            config: 可运行单元（Runnable）使用的配置。
+            **kwargs: 传递给可运行单元（Runnable）的其他关键字参数。
 
         Yields:
-            The output of the `Runnable`.
+            可运行单元（Runnable）的输出。
 
         """
         yield self.invoke(input, config, **kwargs)
@@ -1154,17 +1138,17 @@ class Runnable(ABC, Generic[Input, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> AsyncIterator[Output]:
-        """Default implementation of `astream`, which calls `ainvoke`.
+        """`astream` 的默认实现，调用 `ainvoke`。
 
-        Subclasses must override this method if they support streaming output.
+        如果子类支持流式输出，则必须重写此方法。
 
         Args:
-            input: The input to the `Runnable`.
-            config: The config to use for the `Runnable`.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+            input: 可运行单元（Runnable）的输入。
+            config: 可运行单元（Runnable）使用的配置。
+            **kwargs: 传递给可运行单元（Runnable）的其他关键字参数。
 
         Yields:
-            The output of the `Runnable`.
+            可运行单元（Runnable）的输出。
 
         """
         yield await self.ainvoke(input, config, **kwargs)
@@ -1218,31 +1202,30 @@ class Runnable(ABC, Generic[Input, Output]):
         exclude_tags: Sequence[str] | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[RunLogPatch] | AsyncIterator[RunLog]:
-        """Stream all output from a `Runnable`, as reported to the callback system.
+        """流式输出可运行单元（Runnable）的所有输出，报告给回调系统。
 
-        This includes all inner runs of LLMs, Retrievers, Tools, etc.
+        这包括 LLM、检索器、工具等的所有内部运行。
 
-        Output is streamed as Log objects, which include a list of
-        Jsonpatch ops that describe how the state of the run has changed in each
-        step, and the final state of the run.
+        输出作为日志对象流式传输，包括描述每一步运行状态如何变化的
+        Jsonpatch 操作列表，以及运行的最终状态。
 
-        The Jsonpatch ops can be applied in order to construct state.
+        可以按顺序应用 Jsonpatch 操作来构建状态。
 
         Args:
-            input: The input to the `Runnable`.
-            config: The config to use for the `Runnable`.
-            diff: Whether to yield diffs between each step or the current state.
-            with_streamed_output_list: Whether to yield the `streamed_output` list.
-            include_names: Only include logs with these names.
-            include_types: Only include logs with these types.
-            include_tags: Only include logs with these tags.
-            exclude_names: Exclude logs with these names.
-            exclude_types: Exclude logs with these types.
-            exclude_tags: Exclude logs with these tags.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+            input: 可运行单元（Runnable）的输入。
+            config: 可运行单元（Runnable）使用的配置。
+            diff: 是否在每一步或当前状态之间生成差异。
+            with_streamed_output_list: 是否生成 `streamed_output` 列表。
+            include_names: 仅包含具有这些名称的日志。
+            include_types: 仅包含具有这些类型的日志。
+            include_tags: 仅包含具有这些标签的日志。
+            exclude_names: 排除具有这些名称的日志。
+            exclude_types: 排除具有这些类型的日志。
+            exclude_tags: 排除具有这些标签的日志。
+            **kwargs: 传递给可运行单元（Runnable）的其他关键字参数。
 
         Yields:
-            A `RunLogPatch` or `RunLog` object.
+            `RunLogPatch` 或 `RunLog` 对象。
 
         """
         stream = LogStreamCallbackHandler(
@@ -1256,9 +1239,9 @@ class Runnable(ABC, Generic[Input, Output]):
             _schema_format="original",
         )
 
-        # Mypy isn't resolving the overloads here
-        # Likely an issue b/c `self` is being passed through
-        # and it's can't map it to Runnable[Input,Output]?
+        # Mypy 在这里没有正确解析重载
+        # 可能是因为 `self` 被传递了
+        # 而且它无法将其映射到 Runnable[Input,Output]？
         async for item in _astream_log_implementation(  # type: ignore[call-overload]
             self,
             input,
@@ -1284,35 +1267,31 @@ class Runnable(ABC, Generic[Input, Output]):
         exclude_tags: Sequence[str] | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[StreamEvent]:
-        """Generate a stream of events.
+        """生成事件流。
 
-        Use to create an iterator over `StreamEvent` that provide real-time information
-        about the progress of the `Runnable`, including `StreamEvent` from intermediate
-        results.
+        用于创建 `StreamEvent` 的迭代器，提供关于可运行单元（Runnable）
+        进度的实时信息，包括来自中间结果的 `StreamEvent`。
 
-        A `StreamEvent` is a dictionary with the following schema:
+        `StreamEvent` 是一个具有以下模式的字典：
 
-        - `event`: Event names are of the format:
-            `on_[runnable_type]_(start|stream|end)`.
-        - `name`: The name of the `Runnable` that generated the event.
-        - `run_id`: Randomly generated ID associated with the given execution of the
-            `Runnable` that emitted the event. A child `Runnable` that gets invoked as
-            part of the execution of a parent `Runnable` is assigned its own unique ID.
-        - `parent_ids`: The IDs of the parent runnables that generated the event. The
-            root `Runnable` will have an empty list. The order of the parent IDs is from
-            the root to the immediate parent. Only available for v2 version of the API.
-            The v1 version of the API will return an empty list.
-        - `tags`: The tags of the `Runnable` that generated the event.
-        - `metadata`: The metadata of the `Runnable` that generated the event.
-        - `data`: The data associated with the event. The contents of this field
-            depend on the type of event. See the table below for more details.
+        - `event`：事件名称格式为：
+            `on_[runnable_type]_(start|stream|end)`。
+        - `name`：生成事件的 `Runnable` 的名称。
+        - `run_id`：与发出事件的 `Runnable` 的给定执行相关联的随机生成的 ID。
+            作为父 `Runnable` 执行的一部分而被调用的子 `Runnable` 会被分配自己唯一的 ID。
+        - `parent_ids`：生成事件的父可运行单元的 ID。
+            根 `Runnable` 将有一个空列表。父 ID 的顺序是从根到直接父级。
+            仅在 API 的 v2 版本中可用。API 的 v1 版本将返回空列表。
+        - `tags`：生成事件的 `Runnable` 的标签。
+        - `metadata`：生成事件的 `Runnable` 的元数据。
+        - `data`：与事件关联的数据。此字段的内容取决于事件的类型。
+            详见下表。
 
-        Below is a table that illustrates some events that might be emitted by various
-        chains. Metadata fields have been omitted from the table for brevity.
-        Chain definitions have been included after the table.
+        以下表格展示了一些可能由各种链发出的事件。为简洁起见，
+        表中省略了元数据字段。表格后面包含了链的定义。
 
         !!! note
-            This reference table is for the v2 version of the schema.
+            此参考表是针对模式 v2 版本的。
 
         | event                  | name                 | chunk                               | input                                             | output                                              |
         | ---------------------- | -------------------- | ----------------------------------- | ------------------------------------------------- | --------------------------------------------------- |
@@ -1332,20 +1311,20 @@ class Runnable(ABC, Generic[Input, Output]):
         | `on_prompt_start`      | `'[template_name]'`  |                                     | `{"question": "hello"}`                           |                                                     |
         | `on_prompt_end`        | `'[template_name]'`  |                                     | `{"question": "hello"}`                           | `ChatPromptValue(messages: [SystemMessage, ...])`   |
 
-        In addition to the standard events, users can also dispatch custom events (see example below).
+        除了标准事件外，用户还可以调度自定义事件（见下面的示例）。
 
-        Custom events will be only be surfaced with in the v2 version of the API!
+        自定义事件仅在 API 的 v2 版本中显示！
 
-        A custom event has following format:
+        自定义事件具有以下格式：
 
         | Attribute   | Type   | Description                                                                                               |
         | ----------- | ------ | --------------------------------------------------------------------------------------------------------- |
-        | `name`      | `str`  | A user defined name for the event.                                                                        |
-        | `data`      | `Any`  | The data associated with the event. This can be anything, though we suggest making it JSON serializable.  |
+        | `name`      | `str`  | 用户定义的事件名称。                                                                          |
+        | `data`      | `Any`  | 与事件关联的数据。可以是任何内容，尽管建议使其可 JSON 序列化。 |
 
-        Here are declarations associated with the standard events shown above:
+        以下是与上面所示标准事件关联的声明：
 
-        `format_docs`:
+        `format_docs`：
 
         ```python
         def format_docs(docs: list[Document]) -> str:
@@ -1356,7 +1335,7 @@ class Runnable(ABC, Generic[Input, Output]):
         format_docs = RunnableLambda(format_docs)
         ```
 
-        `some_tool`:
+        `some_tool`：
 
         ```python
         @tool
@@ -1365,7 +1344,7 @@ class Runnable(ABC, Generic[Input, Output]):
             return {"x": x, "y": y}
         ```
 
-        `prompt`:
+        `prompt`：
 
         ```python
         template = ChatPromptTemplate.from_messages(
@@ -1392,8 +1371,8 @@ class Runnable(ABC, Generic[Input, Output]):
                 event async for event in chain.astream_events("hello", version="v2")
             ]
 
-            # Will produce the following events
-            # (run_id, and parent_ids has been omitted for brevity):
+            # 将产生以下事件
+            # (run_id 和 parent_ids 为简洁起见已省略)：
             [
                 {
                     "data": {"input": "hello"},
@@ -1419,7 +1398,7 @@ class Runnable(ABC, Generic[Input, Output]):
             ]
             ```
 
-        ```python title="Dispatch custom event"
+        ```python title="调度自定义事件"
         from langchain_core.callbacks.manager import (
             adispatch_custom_event,
         )
@@ -1451,33 +1430,32 @@ class Runnable(ABC, Generic[Input, Output]):
         ```
 
         Args:
-            input: The input to the `Runnable`.
-            config: The config to use for the `Runnable`.
-            version: The version of the schema to use, either `'v2'` or `'v1'`.
+            input: 可运行单元（Runnable）的输入。
+            config: 可运行单元（Runnable）使用的配置。
+            version: 要使用的模式版本，`'v2'` 或 `'v1'`。
 
-                Users should use `'v2'`.
+                用户应使用 `'v2'`。
 
-                `'v1'` is for backwards compatibility and will be deprecated
-                in `0.4.0`.
+                `'v1'` 是为了向后兼容，将在 `0.4.0` 中弃用。
 
-                No default will be assigned until the API is stabilized.
-                custom events will only be surfaced in `'v2'`.
-            include_names: Only include events from `Runnable` objects with matching names.
-            include_types: Only include events from `Runnable` objects with matching types.
+                在 API 稳定之前不会分配默认值。
+                自定义事件仅在 `'v2'` 中显示。
+            include_names: 仅包含具有匹配名称的可运行单元（Runnable）的事件。
+            include_types: 仅包含具有匹配类型的可运行单元（Runnable）的事件。
             include_tags: Only include events from `Runnable` objects with matching tags.
             exclude_names: Exclude events from `Runnable` objects with matching names.
             exclude_types: Exclude events from `Runnable` objects with matching types.
             exclude_tags: Exclude events from `Runnable` objects with matching tags.
             **kwargs: Additional keyword arguments to pass to the `Runnable`.
 
-                These will be passed to `astream_log` as this implementation
-                of `astream_events` is built on top of `astream_log`.
+                这些将被传递给 `astream_log`，因为 `astream_events`
+                的实现是构建在 `astream_log` 之上的。
 
         Yields:
-            An async stream of `StreamEvent`.
+            `StreamEvent` 的异步流。
 
         Raises:
-            NotImplementedError: If the version is not `'v1'` or `'v2'`.
+            NotImplementedError: 如果版本不是 `'v1'` 或 `'v2'`。
 
         """  # noqa: E501
         if version == "v2":
@@ -1494,8 +1472,8 @@ class Runnable(ABC, Generic[Input, Output]):
                 **kwargs,
             )
         elif version == "v1":
-            # First implementation, built on top of astream_log API
-            # This implementation will be deprecated as of 0.2.0
+            # 第一个实现，构建在 astream_log API 之上
+            # 此实现将在 0.2.0 中弃用
             event_stream = _astream_events_implementation_v1(
                 self,
                 input,
@@ -1522,33 +1500,30 @@ class Runnable(ABC, Generic[Input, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> Iterator[Output]:
-        """Transform inputs to outputs.
+        """将输入转换为输出。
 
-        Default implementation of transform, which buffers input and calls `astream`.
+        transform 的默认实现，它缓冲输入并调用 `astream`。
 
-        Subclasses must override this method if they can start producing output while
-        input is still being generated.
+        如果子类可以在输入仍在生成时开始产生输出，则必须重写此方法。
 
         Args:
-            input: An iterator of inputs to the `Runnable`.
-            config: The config to use for the `Runnable`.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+            input: 可运行单元（Runnable）的输入迭代器。
+            config: 可运行单元（Runnable）使用的配置。
+            **kwargs: 传递给可运行单元（Runnable）的其他关键字参数。
 
         Yields:
-            The output of the `Runnable`.
+            可运行单元（Runnable）的输出。
 
         """
         final: Input
         got_first_val = False
 
         for ichunk in input:
-            # The default implementation of transform is to buffer input and
-            # then call stream.
-            # It'll attempt to gather all input into a single chunk using
-            # the `+` operator.
-            # If the input is not addable, then we'll assume that we can
-            # only operate on the last chunk,
-            # and we'll iterate until we get to the last chunk.
+            # transform 的默认实现是缓冲输入，
+            # 然后调用 stream。
+            # 它会尝试使用 `+` 运算符将所有输入收集到一个块中。
+            # 如果输入不可加，那么我们假定只能操作最后一个块，
+            # 我们会迭代直到到达最后一个块。
             if not got_first_val:
                 final = ichunk
                 got_first_val = True
@@ -1567,33 +1542,30 @@ class Runnable(ABC, Generic[Input, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> AsyncIterator[Output]:
-        """Transform inputs to outputs.
+        """将输入转换为输出。
 
-        Default implementation of atransform, which buffers input and calls `astream`.
+        atransform 的默认实现，它缓冲输入并调用 `astream`。
 
-        Subclasses must override this method if they can start producing output while
-        input is still being generated.
+        如果子类可以在输入仍在生成时开始产生输出，则必须重写此方法。
 
         Args:
-            input: An async iterator of inputs to the `Runnable`.
-            config: The config to use for the `Runnable`.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+            input: 可运行单元（Runnable）输入的异步迭代器。
+            config: 可运行单元（Runnable）使用的配置。
+            **kwargs: 传递给可运行单元（Runnable）的其他关键字参数。
 
         Yields:
-            The output of the `Runnable`.
+            可运行单元（Runnable）的输出。
 
         """
         final: Input
         got_first_val = False
 
         async for ichunk in input:
-            # The default implementation of transform is to buffer input and
-            # then call stream.
-            # It'll attempt to gather all input into a single chunk using
-            # the `+` operator.
-            # If the input is not addable, then we'll assume that we can
-            # only operate on the last chunk,
-            # and we'll iterate until we get to the last chunk.
+            # transform 的默认实现是缓冲输入，
+            # 然后调用 stream。
+            # 它会尝试使用 `+` 运算符将所有输入收集到一个块中。
+            # 如果输入不可加，那么我们假定只能操作最后一个块，
+            # 我们会迭代直到到达最后一个块。
             if not got_first_val:
                 final = ichunk
                 got_first_val = True
@@ -1608,16 +1580,16 @@ class Runnable(ABC, Generic[Input, Output]):
                 yield output
 
     def bind(self, **kwargs: Any) -> Runnable[Input, Output]:
-        """Bind arguments to a `Runnable`, returning a new `Runnable`.
+        """将参数绑定到可运行单元（Runnable），返回一个新的可运行单元（Runnable）。
 
-        Useful when a `Runnable` in a chain requires an argument that is not
-        in the output of the previous `Runnable` or included in the user input.
+        当链中的可运行单元（Runnable）需要上一个可运行单元输出中不包含
+        或用户输入中未包含的参数时，此方法很有用。
 
         Args:
-            **kwargs: The arguments to bind to the `Runnable`.
+            **kwargs: 要绑定到可运行单元（Runnable）的参数。
 
         Returns:
-            A new `Runnable` with the arguments bound.
+            绑定参数的新可运行单元（Runnable）。
 
         Example:
             ```python
@@ -1645,16 +1617,17 @@ class Runnable(ABC, Generic[Input, Output]):
         self,
         config: RunnableConfig | None = None,
         # Sadly Unpack is not well-supported by mypy so this will have to be untyped
+        # 不幸的是，Unpack 没有被 mypy 很好地支持，所以这里必须不进行类型检查
         **kwargs: Any,
     ) -> Runnable[Input, Output]:
-        """Bind config to a `Runnable`, returning a new `Runnable`.
+        """将配置绑定到可运行单元（Runnable），返回一个新的可运行单元（Runnable）。
 
         Args:
-            config: The config to bind to the `Runnable`.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+            config: 要绑定到可运行单元（Runnable）的配置。
+            **kwargs: 传递给可运行单元（Runnable）的其他关键字参数。
 
         Returns:
-            A new `Runnable` with the config bound.
+            绑定配置的新可运行单元（Runnable）。
 
         """
         return RunnableBinding(
@@ -1679,22 +1652,18 @@ class Runnable(ABC, Generic[Input, Output]):
         | Callable[[Run, RunnableConfig], None]
         | None = None,
     ) -> Runnable[Input, Output]:
-        """Bind lifecycle listeners to a `Runnable`, returning a new `Runnable`.
+        """将生命周期监听器绑定到可运行单元（Runnable），返回一个新的可运行单元（Runnable）。
 
-        The Run object contains information about the run, including its `id`,
-        `type`, `input`, `output`, `error`, `start_time`, `end_time`, and
-        any tags or metadata added to the run.
+        Run 对象包含有关运行的信息，包括其 `id`、`type`、`input`、`output`、
+        `error`、`start_time`、`end_time` 以及添加到运行中的任何标签或元数据。
 
         Args:
-            on_start: Called before the `Runnable` starts running, with the `Run`
-                object.
-            on_end: Called after the `Runnable` finishes running, with the `Run`
-                object.
-            on_error: Called if the `Runnable` throws an error, with the `Run`
-                object.
+            on_start: 在可运行单元（Runnable）开始运行之前调用，传入 `Run` 对象。
+            on_end: 在可运行单元（Runnable）运行完成后调用，传入 `Run` 对象。
+            on_error: 在可运行单元（Runnable）抛出错误时调用，传入 `Run` 对象。
 
         Returns:
-            A new `Runnable` with the listeners bound.
+            绑定监听器的新可运行单元（Runnable）。
 
         Example:
             ```python
@@ -1745,24 +1714,23 @@ class Runnable(ABC, Generic[Input, Output]):
         on_end: AsyncListener | None = None,
         on_error: AsyncListener | None = None,
     ) -> Runnable[Input, Output]:
-        """Bind async lifecycle listeners to a `Runnable`.
+        """将异步生命周期监听器绑定到可运行单元（Runnable）。
 
-        Returns a new `Runnable`.
+        返回一个新的可运行单元（Runnable）。
 
-        The Run object contains information about the run, including its `id`,
-        `type`, `input`, `output`, `error`, `start_time`, `end_time`, and
-        any tags or metadata added to the run.
+        Run 对象包含有关运行的信息，包括其 `id`、`type`、`input`、`output`、
+        `error`、`start_time`、`end_time` 以及添加到运行中的任何标签或元数据。
 
         Args:
-            on_start: Called asynchronously before the `Runnable` starts running,
-                with the `Run` object.
-            on_end: Called asynchronously after the `Runnable` finishes running,
-                with the `Run` object.
-            on_error: Called asynchronously if the `Runnable` throws an error,
-                with the `Run` object.
+            on_start: 在可运行单元（Runnable）开始运行之前异步调用，
+                传入 `Run` 对象。
+            on_end: 在可运行单元（Runnable）运行完成后异步调用，
+                传入 `Run` 对象。
+            on_error: 在可运行单元（Runnable）抛出错误时异步调用，
+                传入 `Run` 对象。
 
         Returns:
-            A new `Runnable` with the listeners bound.
+            绑定监听器的新可运行单元（Runnable）。
 
         Example:
             ```python
@@ -1841,14 +1809,14 @@ class Runnable(ABC, Generic[Input, Output]):
         input_type: type[Input] | None = None,
         output_type: type[Output] | None = None,
     ) -> Runnable[Input, Output]:
-        """Bind input and output types to a `Runnable`, returning a new `Runnable`.
+        """将输入和输出类型绑定到可运行单元（Runnable），返回一个新的可运行单元（Runnable）。
 
         Args:
-            input_type: The input type to bind to the `Runnable`.
-            output_type: The output type to bind to the `Runnable`.
+            input_type: 要绑定到可运行单元（Runnable）的输入类型。
+            output_type: 要绑定到可运行单元（Runnable）的输出类型。
 
         Returns:
-            A new `Runnable` with the types bound.
+            绑定类型的新可运行单元（Runnable）。
         """
         return RunnableBinding(
             bound=self,
@@ -1865,20 +1833,17 @@ class Runnable(ABC, Generic[Input, Output]):
         exponential_jitter_params: ExponentialJitterParams | None = None,
         stop_after_attempt: int = 3,
     ) -> Runnable[Input, Output]:
-        """Create a new `Runnable` that retries the original `Runnable` on exceptions.
+        """创建一个在异常时重试原始可运行单元（Runnable）的新可运行单元（Runnable）。
 
         Args:
-            retry_if_exception_type: A tuple of exception types to retry on.
-            wait_exponential_jitter: Whether to add jitter to the wait
-                time between retries.
-            stop_after_attempt: The maximum number of attempts to make before
-                giving up.
-            exponential_jitter_params: Parameters for
-                `tenacity.wait_exponential_jitter`. Namely: `initial`, `max`,
-                `exp_base`, and `jitter` (all `float` values).
+            retry_if_exception_type: 要重试的异常类型元组。
+            wait_exponential_jitter: 是否在重试之间添加抖动。
+            stop_after_attempt: 放弃前的最大尝试次数。
+            exponential_jitter_params: `tenacity.wait_exponential_jitter` 的参数。
+                即：`initial`、`max`、`exp_base` 和 `jitter`（均为 `float` 值）。
 
         Returns:
-            A new `Runnable` that retries the original `Runnable` on exceptions.
+            在异常时重试原始可运行单元（Runnable）的新可运行单元（Runnable）。
 
         Example:
             ```python
@@ -1908,7 +1873,7 @@ class Runnable(ABC, Generic[Input, Output]):
             assert count == 2
             ```
         """
-        # Import locally to prevent circular import
+        # 在本地导入以避免循环导入
         from langchain_core.runnables.retry import RunnableRetry  # noqa: PLC0415
 
         return RunnableRetry(
@@ -1922,12 +1887,12 @@ class Runnable(ABC, Generic[Input, Output]):
         )
 
     def map(self) -> Runnable[list[Input], list[Output]]:
-        """Return a new `Runnable` that maps a list of inputs to a list of outputs.
+        """返回将输入列表映射到输出列表的新可运行单元（Runnable）。
 
-        Calls `invoke` with each input.
+        对每个输入调用 `invoke`。
 
         Returns:
-            A new `Runnable` that maps a list of inputs to a list of outputs.
+            将输入列表映射到输出列表的新可运行单元（Runnable）。
 
         Example:
             ```python
@@ -1951,26 +1916,25 @@ class Runnable(ABC, Generic[Input, Output]):
         exceptions_to_handle: tuple[type[BaseException], ...] = (Exception,),
         exception_key: str | None = None,
     ) -> RunnableWithFallbacksT[Input, Output]:
-        """Add fallbacks to a `Runnable`, returning a new `Runnable`.
+        """为可运行单元（Runnable）添加降级方案，返回一个新的可运行单元（Runnable）。
 
-        The new `Runnable` will try the original `Runnable`, and then each fallback
-        in order, upon failures.
+        新的可运行单元（Runnable）将在失败时依次尝试原始可运行单元（Runnable），
+        然后尝试每个降级方案。
 
         Args:
-            fallbacks: A sequence of runnables to try if the original `Runnable`
-                fails.
-            exceptions_to_handle: A tuple of exception types to handle.
-            exception_key: If `string` is specified then handled exceptions will be
-                passed to fallbacks as part of the input under the specified key.
+            fallbacks: 原始可运行单元（Runnable）失败时要尝试的可运行单元序列。
+            exceptions_to_handle: 要处理的异常类型元组。
+            exception_key: 如果指定为 `string`，则被处理的异常将作为输入的一部分，
+                通过指定的键传递给降级方案。
 
-                If `None`, exceptions will not be passed to fallbacks.
+                如果为 `None`，异常不会传递给降级方案。
 
-                If used, the base `Runnable` and its fallbacks must accept a
-                dictionary as input.
+                如果使用此参数，基础可运行单元（Runnable）及其降级方案
+                必须接受字典作为输入。
 
         Returns:
-            A new `Runnable` that will try the original `Runnable`, and then each
-                Fallback in order, upon failures.
+            一个新的可运行单元（Runnable），在失败时将依次尝试
+            原始可运行单元（Runnable），然后是每个降级方案。
 
         Example:
             ```python
@@ -1995,22 +1959,21 @@ class Runnable(ABC, Generic[Input, Output]):
             ```
 
         Args:
-            fallbacks: A sequence of runnables to try if the original `Runnable`
-                fails.
-            exceptions_to_handle: A tuple of exception types to handle.
-            exception_key: If `string` is specified then handled exceptions will be
-                passed to fallbacks as part of the input under the specified key.
+            fallbacks: 原始可运行单元（Runnable）失败时要尝试的可运行单元序列。
+            exceptions_to_handle: 要处理的异常类型元组。
+            exception_key: 如果指定为 `string`，则被处理的异常将作为输入的一部分，
+                通过指定的键传递给降级方案。
 
-                If `None`, exceptions will not be passed to fallbacks.
+                如果为 `None`，异常不会传递给降级方案。
 
-                If used, the base `Runnable` and its fallbacks must accept a
-                dictionary as input.
+                如果使用此参数，基础可运行单元（Runnable）及其降级方案
+                必须接受字典作为输入。
 
         Returns:
-            A new `Runnable` that will try the original `Runnable`, and then each
-                Fallback in order, upon failures.
+            一个新的可运行单元（Runnable），在失败时将依次尝试
+            原始可运行单元（Runnable），然后是每个降级方案。
         """
-        # Import locally to prevent circular import
+        # 在本地导入以避免循环导入
         from langchain_core.runnables.fallbacks import (  # noqa: PLC0415
             RunnableWithFallbacks,
         )
@@ -2022,7 +1985,7 @@ class Runnable(ABC, Generic[Input, Output]):
             exception_key=exception_key,
         )
 
-    """ --- Helper methods for Subclasses --- """
+    """ --- 子类的辅助方法 --- """
 
     def _call_with_config(
         self,
@@ -2035,12 +1998,11 @@ class Runnable(ABC, Generic[Input, Output]):
         serialized: dict[str, Any] | None = None,
         **kwargs: Any | None,
     ) -> Output:
-        """Call with config.
+        """使用配置调用。
 
-        Helper method to transform an `Input` value to an `Output` value,
-        with callbacks.
+        辅助方法，用于在有回调的情况下将 `Input` 值转换为 `Output` 值。
 
-        Use this method to implement `invoke` in subclasses.
+        使用此方法在子类中实现 `invoke`。
 
         """
         config = ensure_config(config)
@@ -2086,12 +2048,11 @@ class Runnable(ABC, Generic[Input, Output]):
         serialized: dict[str, Any] | None = None,
         **kwargs: Any | None,
     ) -> Output:
-        """Async call with config.
+        """异步调用（使用配置）。
 
-        Helper method to transform an `Input` value to an `Output` value,
-        with callbacks.
+        辅助方法，用于在有回调的情况下将 `Input` 值转换为 `Output` 值。
 
-        Use this method to implement `ainvoke` in subclasses.
+        使用此方法在子类中实现 `ainvoke`。
         """
         config = ensure_config(config)
         callback_manager = get_async_callback_manager_for_config(config)
@@ -2133,10 +2094,10 @@ class Runnable(ABC, Generic[Input, Output]):
         run_type: str | None = None,
         **kwargs: Any | None,
     ) -> list[Output]:
-        """Transform a list of inputs to a list of outputs, with callbacks.
+        """使用回调将输入列表转换为输出列表。
 
-        Helper method to transform an `Input` value to an `Output` value,
-        with callbacks. Use this method to implement `invoke` in subclasses.
+        辅助方法，用于在有回调的情况下将 `Input` 值转换为 `Output` 值。
+        使用此方法在子类中实现 `invoke`。
 
         """
         if not inputs:
@@ -2201,12 +2162,11 @@ class Runnable(ABC, Generic[Input, Output]):
         run_type: str | None = None,
         **kwargs: Any | None,
     ) -> list[Output]:
-        """Transform a list of inputs to a list of outputs, with callbacks.
+        """使用回调将输入列表转换为输出列表。
 
-        Helper method to transform an `Input` value to an `Output` value,
-        with callbacks.
+        辅助方法，用于在有回调的情况下将 `Input` 值转换为 `Output` 值。
 
-        Use this method to implement `invoke` in subclasses.
+        使用此方法在子类中实现 `invoke`。
 
         """
         if not inputs:
@@ -2271,20 +2231,20 @@ class Runnable(ABC, Generic[Input, Output]):
         run_type: str | None = None,
         **kwargs: Any | None,
     ) -> Iterator[Output]:
-        """Transform a stream with config.
+        """使用配置转换流。
 
-        Helper method to transform an `Iterator` of `Input` values into an
-        `Iterator` of `Output` values, with callbacks.
+        辅助方法，用于在有回调的情况下将 `Input` 值的 `Iterator`
+        转换为 `Output` 值的 `Iterator`。
 
-        Use this to implement `stream` or `transform` in `Runnable` subclasses.
+        使用此方法在 `Runnable` 子类中实现 `stream` 或 `transform`。
 
         """
-        # Extract defers_inputs from kwargs if present
+        # 如果存在，从 kwargs 中提取 defers_inputs
         defers_inputs = kwargs.pop("defers_inputs", False)
 
-        # tee the input so we can iterate over it twice
+        # 对输入进行 tee 以便我们可以迭代两次
         input_for_tracing, input_for_transform = tee(inputs, 2)
-        # Start the input iterator to ensure the input Runnable starts before this one
+        # 启动输入迭代器以确保输入 Runnable 在此之前开始
         final_input: Input | None = next(input_for_tracing, None)
         final_input_supported = True
         final_output: Output | None = None
@@ -2312,7 +2272,7 @@ class Runnable(ABC, Generic[Input, Output]):
                     (
                         cast("_StreamingCallbackHandler", h)
                         for h in run_manager.handlers
-                        # instance check OK here, it's a mixin
+                        # 实例检查在这里没问题，它是一个 mixin
                         if isinstance(h, _StreamingCallbackHandler)
                     ),
                     None,
@@ -2372,20 +2332,20 @@ class Runnable(ABC, Generic[Input, Output]):
         run_type: str | None = None,
         **kwargs: Any | None,
     ) -> AsyncIterator[Output]:
-        """Transform a stream with config.
+        """使用配置转换异步流。
 
-        Helper method to transform an Async `Iterator` of `Input` values into an
-        Async `Iterator` of `Output` values, with callbacks.
+        辅助方法，用于在有回调的情况下将 `Input` 值的异步 `Iterator`
+        转换为 `Output` 值的异步 `Iterator`。
 
-        Use this to implement `astream` or `atransform` in `Runnable` subclasses.
+        使用此方法在 `Runnable` 子类中实现 `astream` 或 `atransform`。
 
         """
-        # Extract defers_inputs from kwargs if present
+        # 如果存在，从 kwargs 中提取 defers_inputs
         defers_inputs = kwargs.pop("defers_inputs", False)
 
-        # tee the input so we can iterate over it twice
+        # 对输入进行 tee 以便我们可以迭代两次
         input_for_tracing, input_for_transform = atee(inputs, 2)
-        # Start the input iterator to ensure the input Runnable starts before this one
+        # 启动输入迭代器以确保输入 Runnable 在此之前开始
         final_input: Input | None = await anext(input_for_tracing, None)
         final_input_supported = True
         final_output: Output | None = None
@@ -2414,12 +2374,12 @@ class Runnable(ABC, Generic[Input, Output]):
                     (
                         cast("_StreamingCallbackHandler", h)
                         for h in run_manager.handlers
-                        # instance check OK here, it's a mixin
+                        # 实例检查在这里没问题，它是一个 mixin
                         if isinstance(h, _StreamingCallbackHandler)
                     ),
                     None,
                 ):
-                    # populates streamed_output in astream_log() output if needed
+                    # 如果需要，在 astream_log() 输出中填充 streamed_output
                     iterator = stream_handler.tap_output_aiter(
                         run_manager.run_id, iterator_
                     )
@@ -2472,29 +2432,27 @@ class Runnable(ABC, Generic[Input, Output]):
         description: str | None = None,
         arg_types: dict[str, type] | None = None,
     ) -> BaseTool:
-        """Create a `BaseTool` from a `Runnable`.
+        """从可运行单元（Runnable）创建基础工具（BaseTool）。
 
-        `as_tool` will instantiate a `BaseTool` with a name, description, and
-        `args_schema` from a `Runnable`. Where possible, schemas are inferred
-        from `runnable.get_input_schema`.
+        `as_tool` 将从可运行单元（Runnable）实例化一个具有名称、描述和
+        `args_schema` 的基础工具（BaseTool）。在可能的情况下，
+        模式从 `runnable.get_input_schema` 推断。
 
-        Alternatively (e.g., if the `Runnable` takes a dict as input and the specific
-        `dict` keys are not typed), the schema can be specified directly with
-        `args_schema`.
+        或者（例如，如果可运行单元（Runnable）接受字典作为输入且特定
+        `dict` 键没有类型化），可以直接通过 `args_schema` 指定模式。
 
-        You can also pass `arg_types` to just specify the required arguments and their
-        types.
+        您也可以传递 `arg_types` 来仅指定所需的参数及其类型。
 
         Args:
-            args_schema: The schema for the tool.
-            name: The name of the tool.
-            description: The description of the tool.
-            arg_types: A dictionary of argument names to types.
+            args_schema: 工具的模式。
+            name: 工具的名称。
+            description: 工具的描述。
+            arg_types: 参数名称到类型的字典。
 
         Returns:
-            A `BaseTool` instance.
+            `BaseTool` 实例。
 
-        !!! example "`TypedDict` input"
+        !!! example "`TypedDict` 输入"
 
             ```python
             from typing_extensions import TypedDict
@@ -2515,7 +2473,7 @@ class Runnable(ABC, Generic[Input, Output]):
             as_tool.invoke({"a": 3, "b": [1, 2]})
             ```
 
-        !!! example "`dict` input, specifying schema via `args_schema`"
+        !!! example "`dict` 输入，通过 `args_schema` 指定模式"
 
             ```python
             from typing import Any
@@ -2536,7 +2494,7 @@ class Runnable(ABC, Generic[Input, Output]):
             as_tool.invoke({"a": 3, "b": [1, 2]})
             ```
 
-        !!! example "`dict` input, specifying schema via `arg_types`"
+        !!! example "`dict` 输入，通过 `arg_types` 指定模式"
 
             ```python
             from typing import Any
@@ -2552,7 +2510,7 @@ class Runnable(ABC, Generic[Input, Output]):
             as_tool.invoke({"a": 3, "b": [1, 2]})
             ```
 
-        !!! example "`str` input"
+        !!! example "`str` 输入"
 
             ```python
             from langchain_core.runnables import RunnableLambda
@@ -2571,7 +2529,7 @@ class Runnable(ABC, Generic[Input, Output]):
             as_tool.invoke("b")
             ```
         """
-        # Avoid circular import
+        # 避免循环导入
         from langchain_core.tools import convert_runnable_to_tool  # noqa: PLC0415
 
         return convert_runnable_to_tool(
@@ -2584,26 +2542,26 @@ class Runnable(ABC, Generic[Input, Output]):
 
 
 class RunnableSerializable(Serializable, Runnable[Input, Output]):
-    """Runnable that can be serialized to JSON."""
+    """可序列化到 JSON 的可运行单元（Runnable）。"""
 
     name: str | None = None
-    """The name of the `Runnable`.
+    """可运行单元（Runnable）的名称。
 
-    Used for debugging and tracing.
+    用于调试和追踪。
     """
 
     model_config = ConfigDict(
-        # Suppress warnings from pydantic protected namespaces
-        # (e.g., `model_`)
+        # 抑制来自 pydantic 受保护命名空间的警告
+        # (例如 `model_`)
         protected_namespaces=(),
     )
 
     @override
     def to_json(self) -> SerializedConstructor | SerializedNotImplemented:
-        """Serialize the `Runnable` to JSON.
+        """将可运行单元（Runnable）序列化为 JSON。
 
         Returns:
-            A JSON-serializable representation of the `Runnable`.
+            可运行单元（Runnable）的 JSON 可序列化表示。
 
         """
         dumped = super().to_json()
@@ -2614,16 +2572,16 @@ class RunnableSerializable(Serializable, Runnable[Input, Output]):
     def configurable_fields(
         self, **kwargs: AnyConfigurableField
     ) -> RunnableSerializable[Input, Output]:
-        """Configure particular `Runnable` fields at runtime.
+        """在运行时配置特定的可运行单元（Runnable）字段。
 
         Args:
-            **kwargs: A dictionary of `ConfigurableField` instances to configure.
+            **kwargs: 要配置的可配置字段（`ConfigurableField`）实例字典。
 
         Raises:
-            ValueError: If a configuration key is not found in the `Runnable`.
+            ValueError: 如果在可运行单元（Runnable）中找不到配置键。
 
         Returns:
-            A new `Runnable` with the fields configured.
+            配置了字段的新可运行单元（Runnable）。
 
         !!! example
 
@@ -2653,7 +2611,7 @@ class RunnableSerializable(Serializable, Runnable[Input, Output]):
             )
             ```
         """
-        # Import locally to prevent circular import
+        # 在本地导入以避免循环导入
         from langchain_core.runnables.configurable import (  # noqa: PLC0415
             RunnableConfigurableFields,
         )
@@ -2677,18 +2635,16 @@ class RunnableSerializable(Serializable, Runnable[Input, Output]):
         prefix_keys: bool = False,
         **kwargs: Runnable[Input, Output] | Callable[[], Runnable[Input, Output]],
     ) -> RunnableSerializable[Input, Output]:
-        """Configure alternatives for `Runnable` objects that can be set at runtime.
+        """配置可在运行时设置的可运行单元（Runnable）对象的替代方案。
 
         Args:
-            which: The `ConfigurableField` instance that will be used to select the
-                alternative.
-            default_key: The default key to use if no alternative is selected.
-            prefix_keys: Whether to prefix the keys with the `ConfigurableField` id.
-            **kwargs: A dictionary of keys to `Runnable` instances or callables that
-                return `Runnable` instances.
+            which: 将用于选择替代方案的可配置字段（`ConfigurableField`）实例。
+            default_key: 如果没有选择替代方案，则使用默认键。
+            prefix_keys: 是否使用可配置字段（`ConfigurableField`）id 作为键的前缀。
+            **kwargs: 键到可运行单元（Runnable）实例或返回可运行单元（Runnable）实例的可调用对象的字典。
 
         Returns:
-            A new `Runnable` with the alternatives configured.
+            配置了替代方案的新可运行单元（Runnable）。
 
         !!! example
 
@@ -2716,7 +2672,7 @@ class RunnableSerializable(Serializable, Runnable[Input, Output]):
             )
             ```
         """
-        # Import locally to prevent circular import
+        # 在本地导入以避免循环导入
         from langchain_core.runnables.configurable import (  # noqa: PLC0415
             RunnableConfigurableAlternatives,
         )
@@ -2733,7 +2689,7 @@ class RunnableSerializable(Serializable, Runnable[Input, Output]):
 def _seq_input_schema(
     steps: list[Runnable[Any, Any]], config: RunnableConfig | None
 ) -> type[BaseModel]:
-    # Import locally to prevent circular import
+    # 在本地导入以避免循环导入
     from langchain_core.runnables.passthrough import (  # noqa: PLC0415
         RunnableAssign,
         RunnablePick,
@@ -2745,7 +2701,7 @@ def _seq_input_schema(
     if isinstance(first, RunnableAssign):
         next_input_schema = _seq_input_schema(steps[1:], config)
         if not issubclass(next_input_schema, RootModel):
-            # it's a dict as expected
+            # 它是一个字典，正如预期的那样
             return create_model_v2(
                 "RunnableSequenceInput",
                 field_definitions={
@@ -2763,7 +2719,7 @@ def _seq_input_schema(
 def _seq_output_schema(
     steps: list[Runnable[Any, Any]], config: RunnableConfig | None
 ) -> type[BaseModel]:
-    # Import locally to prevent circular import
+    # 在本地导入以避免循环导入
     from langchain_core.runnables.passthrough import (  # noqa: PLC0415
         RunnableAssign,
         RunnablePick,
@@ -2776,7 +2732,7 @@ def _seq_output_schema(
         mapper_output_schema = last.mapper.get_output_schema(config)
         prev_output_schema = _seq_output_schema(steps[:-1], config)
         if not issubclass(prev_output_schema, RootModel):
-            # it's a dict as expected
+            # 它是一个字典，正如预期的那样
             return create_model_v2(
                 "RunnableSequenceOutput",
                 field_definitions={
@@ -2793,7 +2749,7 @@ def _seq_output_schema(
     elif isinstance(last, RunnablePick):
         prev_output_schema = _seq_output_schema(steps[:-1], config)
         if not issubclass(prev_output_schema, RootModel):
-            # it's a dict as expected
+            # 它是一个字典，正如预期的那样
             if isinstance(last.keys, list):
                 return create_model_v2(
                     "RunnableSequenceOutput",
@@ -2815,43 +2771,38 @@ _RUNNABLE_SEQUENCE_MIN_STEPS = 2
 
 
 class RunnableSequence(RunnableSerializable[Input, Output]):
-    """Sequence of `Runnable` objects, where the output of one is the input of the next.
+    """可运行单元（Runnable）对象的序列，其中一个的输出是下一个的输入。
 
-    **`RunnableSequence`** is the most important composition operator in LangChain
-    as it is used in virtually every chain.
+    **`RunnableSequence`**（顺序运行单元）是 LangChain 中最重要的组合运算符，
+    因为它在几乎每个链中都有使用。
 
-    A `RunnableSequence` can be instantiated directly or more commonly by using the
-    `|` operator where either the left or right operands (or both) must be a
-    `Runnable`.
+    `RunnableSequence` 可以直接实例化，但更常见的是使用 `|` 运算符，
+    其中左操作数或右操作数（或两者）必须是 `Runnable`。
 
-    Any `RunnableSequence` automatically supports sync, async, batch.
+    任何 `RunnableSequence` 自动支持同步、异步和批量调用。
 
-    The default implementations of `batch` and `abatch` utilize threadpools and
-    asyncio gather and will be faster than naive invocation of `invoke` or `ainvoke`
-    for IO bound `Runnable`s.
+    `batch` 和 `abatch` 的默认实现利用线程池和 asyncio gather，
+    比对 IO 密集型 `Runnable` 进行朴素调用 `invoke` 或 `ainvoke` 更快。
 
-    Batching is implemented by invoking the batch method on each component of the
-    `RunnableSequence` in order.
+    批量调用通过按顺序对 `RunnableSequence` 的每个组件调用批量方法来实现。
 
-    A `RunnableSequence` preserves the streaming properties of its components, so if
-    all components of the sequence implement a `transform` method -- which
-    is the method that implements the logic to map a streaming input to a streaming
-    output -- then the sequence will be able to stream input to output!
+    `RunnableSequence` 保留其组件的流式属性，因此如果序列的所有组件都实现了
+    `transform` 方法——这是实现将流式输入映射到流式输出的逻辑的方法——
+    那么序列就能够将输入流式传输到输出！
 
-    If any component of the sequence does not implement transform then the
-    streaming will only begin after this component is run. If there are
-    multiple blocking components, streaming begins after the last one.
+    如果序列的任何组件没有实现 transform，那么流式传输
+    只会在该组件运行后开始。如果有多个阻塞组件，
+    流式传输会在最后一个组件之后开始。
 
     !!! note
-        `RunnableLambdas` do not support `transform` by default! So if you need to
-        use a `RunnableLambdas` be careful about where you place them in a
-        `RunnableSequence` (if you need to use the `stream`/`astream` methods).
+        `RunnableLambda` 默认不支持 `transform`！因此，如果需要使用
+        `RunnableLambda`，请注意它们在 `RunnableSequence` 中的位置
+        （如果需要使用 `stream`/`astream` 方法）。
 
-        If you need arbitrary logic and need streaming, you can subclass
-        Runnable, and implement `transform` for whatever logic you need.
+        如果需要任意逻辑和流式传输，可以子类化 Runnable，
+        并为所需的逻辑实现 `transform`。
 
-    Here is a simple example that uses simple functions to illustrate the use of
-    `RunnableSequence`:
+    以下是一个使用简单函数说明 `RunnableSequence` 用法的简单示例：
 
         ```python
         from langchain_core.runnables import RunnableLambda
@@ -2877,7 +2828,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
         await sequence.abatch([1, 2, 3])
         ```
 
-    Here's an example that uses streams JSON output generated by an LLM:
+    以下是一个使用流式传输 LLM 生成的 JSON 输出的示例：
 
         ```python
         from langchain_core.output_parsers.json import SimpleJsonOutputParser
@@ -2898,15 +2849,14 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
         ```
     """
 
-    # The steps are broken into first, middle and last, solely for type checking
-    # purposes. It allows specifying the `Input` on the first type, the `Output` of
-    # the last type.
+    # 将步骤分为 first、middle 和 last，仅用于类型检查。
+    # 它允许在第一个类型上指定 `Input`，在最后一个类型上指定 `Output`。
     first: Runnable[Input, Any]
-    """The first `Runnable` in the sequence."""
+    """序列中的第一个可运行单元（Runnable）。"""
     middle: list[Runnable[Any, Any]] = Field(default_factory=list)
-    """The middle `Runnable` in the sequence."""
+    """序列中的中间可运行单元（Runnable）。"""
     last: Runnable[Any, Output]
-    """The last `Runnable` in the sequence."""
+    """序列中的最后一个可运行单元（Runnable）。"""
 
     def __init__(
         self,
@@ -2916,17 +2866,17 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
         middle: list[Runnable[Any, Any]] | None = None,
         last: Runnable[Any, Any] | None = None,
     ) -> None:
-        """Create a new `RunnableSequence`.
+        """创建新的 `RunnableSequence`（顺序运行单元）。
 
         Args:
-            steps: The steps to include in the sequence.
-            name: The name of the `Runnable`.
-            first: The first `Runnable` in the sequence.
-            middle: The middle `Runnable` objects in the sequence.
-            last: The last `Runnable` in the sequence.
+            steps: 要包含在序列中的步骤。
+            name: 可运行单元（Runnable）的名称。
+            first: 序列中的第一个可运行单元（Runnable）。
+            middle: 序列中的中间可运行单元（Runnable）对象。
+            last: 序列中的最后一个可运行单元（Runnable）。
 
         Raises:
-            ValueError: If the sequence has less than 2 steps.
+            ValueError: 如果序列少于 2 个步骤。
         """
         steps_flat: list[Runnable] = []
         if not steps and first is not None and last is not None:
@@ -2961,17 +2911,17 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
 
     @property
     def steps(self) -> list[Runnable[Any, Any]]:
-        """All the `Runnable`s that make up the sequence in order.
+        """组成序列的所有可运行单元（Runnable），按顺序排列。
 
         Returns:
-            A list of `Runnable`s.
+            可运行单元（Runnable）的列表。
         """
         return [self.first, *self.middle, self.last]
 
     @classmethod
     @override
     def is_lc_serializable(cls) -> bool:
-        """Return `True` as this class is serializable."""
+        """返回 `True`，因为此类是可序列化的。"""
         return True
 
     model_config = ConfigDict(
@@ -2981,24 +2931,24 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
     @property
     @override
     def InputType(self) -> type[Input]:
-        """The type of the input to the `Runnable`."""
+        """可运行单元（Runnable）的输入类型。"""
         return self.first.InputType
 
     @property
     @override
     def OutputType(self) -> type[Output]:
-        """The type of the output of the `Runnable`."""
+        """可运行单元（Runnable）的输出类型。"""
         return self.last.OutputType
 
     @override
     def get_input_schema(self, config: RunnableConfig | None = None) -> type[BaseModel]:
-        """Get the input schema of the `Runnable`.
+        """获取可运行单元（Runnable）的输入模式。
 
         Args:
-            config: The config to use.
+            config: 要使用的配置。
 
         Returns:
-            The input schema of the `Runnable`.
+            可运行单元（Runnable）的输入模式。
 
         """
         return _seq_input_schema(self.steps, config)
@@ -3007,13 +2957,13 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
     def get_output_schema(
         self, config: RunnableConfig | None = None
     ) -> type[BaseModel]:
-        """Get the output schema of the `Runnable`.
+        """获取可运行单元（Runnable）的输出模式。
 
         Args:
-            config: The config to use.
+            config: 要使用的配置。
 
         Returns:
-            The output schema of the `Runnable`.
+            可运行单元（Runnable）的输出模式。
 
         """
         return _seq_output_schema(self.steps, config)
@@ -3021,32 +2971,32 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
     @property
     @override
     def config_specs(self) -> list[ConfigurableFieldSpec]:
-        """Get the config specs of the `Runnable`.
+        """获取可运行单元（Runnable）的配置规范。
 
         Returns:
-            The config specs of the `Runnable`.
+            可运行单元（Runnable）的配置规范。
 
         """
-        # Import locally to prevent circular import
+        # 在本地导入以避免循环导入
         return get_unique_config_specs(
             [spec for step in self.steps for spec in step.config_specs]
         )
 
     @override
     def get_graph(self, config: RunnableConfig | None = None) -> Graph:
-        """Get the graph representation of the `Runnable`.
+        """获取可运行单元（Runnable）的图形表示。
 
         Args:
-            config: The config to use.
+            config: 要使用的配置。
 
         Returns:
-            The graph representation of the `Runnable`.
+            可运行单元（Runnable）的图形表示。
 
         Raises:
-            ValueError: If a `Runnable` has no first or last node.
+            ValueError: 如果可运行单元（Runnable）没有第一个或最后一个节点。
 
         """
-        # Import locally to prevent circular import
+        # 在本地导入以避免循环导入
         from langchain_core.runnables.graph import Graph  # noqa: PLC0415
 
         graph = Graph()
@@ -3131,10 +3081,10 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
     def invoke(
         self, input: Input, config: RunnableConfig | None = None, **kwargs: Any
     ) -> Output:
-        # setup callbacks and context
+        # 设置回调和上下文
         config = ensure_config(config)
         callback_manager = get_callback_manager_for_config(config)
-        # start the root run
+        # 启动根运行
         run_manager = callback_manager.on_chain_start(
             None,
             input,
@@ -3143,10 +3093,10 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
         )
         input_ = input
 
-        # invoke all steps in sequence
+        # 按顺序调用所有步骤
         try:
             for i, step in enumerate(self.steps):
-                # mark each step as a child run
+                # 将每个步骤标记为子运行
                 config = patch_config(
                     config, callbacks=run_manager.get_child(f"seq:step:{i + 1}")
                 )
@@ -3155,7 +3105,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                         input_ = context.run(step.invoke, input_, config, **kwargs)
                     else:
                         input_ = context.run(step.invoke, input_, config)
-        # finish the root run
+        # 完成根运行
         except BaseException as e:
             run_manager.on_chain_error(e)
             raise
@@ -3170,10 +3120,10 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> Output:
-        # setup callbacks and context
+        # 设置回调和上下文
         config = ensure_config(config)
         callback_manager = get_async_callback_manager_for_config(config)
-        # start the root run
+        # 启动根运行
         run_manager = await callback_manager.on_chain_start(
             None,
             input,
@@ -3182,10 +3132,10 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
         )
         input_ = input
 
-        # invoke all steps in sequence
+        # 按顺序调用所有步骤
         try:
             for i, step in enumerate(self.steps):
-                # mark each step as a child run
+                # 将每个步骤标记为子运行
                 config = patch_config(
                     config, callbacks=run_manager.get_child(f"seq:step:{i + 1}")
                 )
@@ -3195,7 +3145,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                     else:
                         part = functools.partial(step.ainvoke, input_, config)
                     input_ = await coro_with_context(part(), context, create_task=True)
-            # finish the root run
+            # 完成根运行
         except BaseException as e:
             await run_manager.on_chain_error(e)
             raise
@@ -3215,7 +3165,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
         if not inputs:
             return []
 
-        # setup callbacks and context
+        # 设置回调和上下文
         configs = get_config_list(config, len(inputs))
         callback_managers = [
             CallbackManager.configure(
@@ -3229,7 +3179,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
             )
             for config in configs
         ]
-        # start the root runs, one per input
+        # 启动根运行，每个输入一个
         run_managers = [
             cm.on_chain_start(
                 None,
@@ -3242,20 +3192,20 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
             )
         ]
 
-        # invoke
+        # 调用
         try:
             if return_exceptions:
-                # Track which inputs (by index) failed so far
-                # If an input has failed it will be present in this map,
-                # and the value will be the exception that was raised.
+                # 跟踪到目前为止失败（按索引）的输入
+                # 如果某个输入失败了，它会出现在此映射中，
+                # 值将是抛出的异常。
                 failed_inputs_map: dict[int, Exception] = {}
                 for stepidx, step in enumerate(self.steps):
-                    # Assemble the original indexes of the remaining inputs
-                    # (i.e. the ones that haven't failed yet)
+                    # 组合剩余输入的原始索引
+                    # （即尚未失败的输入）
                     remaining_idxs = [
                         i for i in range(len(configs)) if i not in failed_inputs_map
                     ]
-                    # Invoke the step on the remaining inputs
+                    # 在剩余输入上调用该步骤
                     inputs = step.batch(
                         [
                             inp
@@ -3263,7 +3213,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                             if i not in failed_inputs_map
                         ],
                         [
-                            # each step a child run of the corresponding root run
+                            # 每个步骤是对应根运行的子运行
                             patch_config(
                                 config,
                                 callbacks=rm.get_child(f"seq:step:{stepidx + 1}"),
@@ -3276,7 +3226,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                         return_exceptions=return_exceptions,
                         **(kwargs if stepidx == 0 else {}),
                     )
-                    # If an input failed, add it to the map
+                    # 如果某个输入失败了，将其添加到映射中
                     failed_inputs_map.update(
                         {
                             i: inp
@@ -3285,11 +3235,11 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                         }
                     )
                     inputs = [inp for inp in inputs if not isinstance(inp, Exception)]
-                    # If all inputs have failed, stop processing
+                    # 如果所有输入都失败了，停止处理
                     if len(failed_inputs_map) == len(configs):
                         break
 
-                # Reassemble the outputs, inserting Exceptions for failed inputs
+                # 重新组装输出，为失败的输入插入异常
                 inputs_copy = inputs.copy()
                 inputs = []
                 for i in range(len(configs)):
@@ -3302,7 +3252,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                     inputs = step.batch(
                         inputs,
                         [
-                            # each step a child run of the corresponding root run
+                            # 每个步骤是对应根运行的子运行
                             patch_config(
                                 config, callbacks=rm.get_child(f"seq:step:{i + 1}")
                             )
@@ -3312,7 +3262,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                         **(kwargs if i == 0 else {}),
                     )
 
-        # finish the root runs
+        # 完成根运行
         except BaseException as e:
             for rm in run_managers:
                 rm.on_chain_error(e)
@@ -3343,7 +3293,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
         if not inputs:
             return []
 
-        # setup callbacks and context
+        # 设置回调和上下文
         configs = get_config_list(config, len(inputs))
         callback_managers = [
             AsyncCallbackManager.configure(
@@ -3357,7 +3307,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
             )
             for config in configs
         ]
-        # start the root runs, one per input
+        # 启动根运行，每个输入一个
         run_managers: list[AsyncCallbackManagerForChainRun] = await asyncio.gather(
             *(
                 cm.on_chain_start(
@@ -3372,21 +3322,21 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
             )
         )
 
-        # invoke .batch() on each step
-        # this uses batching optimizations in Runnable subclasses, like LLM
+        # 在每个步骤上调用 .batch()
+        # 这利用了 Runnable 子类中的批量优化，如 LLM
         try:
             if return_exceptions:
-                # Track which inputs (by index) failed so far
-                # If an input has failed it will be present in this map,
-                # and the value will be the exception that was raised.
+                # 跟踪到目前为止失败（按索引）的输入
+                # 如果某个输入失败了，它会出现在此映射中，
+                # 值将是抛出的异常。
                 failed_inputs_map: dict[int, Exception] = {}
                 for stepidx, step in enumerate(self.steps):
-                    # Assemble the original indexes of the remaining inputs
-                    # (i.e. the ones that haven't failed yet)
+                    # 组合剩余输入的原始索引
+                    # （即尚未失败的输入）
                     remaining_idxs = [
                         i for i in range(len(configs)) if i not in failed_inputs_map
                     ]
-                    # Invoke the step on the remaining inputs
+                    # 在剩余输入上调用该步骤
                     inputs = await step.abatch(
                         [
                             inp
@@ -3394,7 +3344,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                             if i not in failed_inputs_map
                         ],
                         [
-                            # each step a child run of the corresponding root run
+                            # 每个步骤是对应根运行的子运行
                             patch_config(
                                 config,
                                 callbacks=rm.get_child(f"seq:step:{stepidx + 1}"),
@@ -3407,7 +3357,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                         return_exceptions=return_exceptions,
                         **(kwargs if stepidx == 0 else {}),
                     )
-                    # If an input failed, add it to the map
+                    # 如果有输入失败，将其添加到映射中
                     failed_inputs_map.update(
                         {
                             i: inp
@@ -3416,11 +3366,11 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                         }
                     )
                     inputs = [inp for inp in inputs if not isinstance(inp, Exception)]
-                    # If all inputs have failed, stop processing
+                    # 如果所有输入都失败了，停止处理
                     if len(failed_inputs_map) == len(configs):
                         break
 
-                # Reassemble the outputs, inserting Exceptions for failed inputs
+                # 重新组装输出，为失败的输入插入异常
                 inputs_copy = inputs.copy()
                 inputs = []
                 for i in range(len(configs)):
@@ -3433,7 +3383,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                     inputs = await step.abatch(
                         inputs,
                         [
-                            # each step a child run of the corresponding root run
+                            # 每个步骤是对应根运行的子运行
                             patch_config(
                                 config, callbacks=rm.get_child(f"seq:step:{i + 1}")
                             )
@@ -3442,7 +3392,7 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
                         return_exceptions=return_exceptions,
                         **(kwargs if i == 0 else {}),
                     )
-        # finish the root runs
+        # 完成根运行
         except BaseException as e:
             await asyncio.gather(*(rm.on_chain_error(e) for rm in run_managers))
             if return_exceptions:
@@ -3470,9 +3420,9 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
         **kwargs: Any,
     ) -> Iterator[Output]:
         steps = [self.first, *self.middle, self.last]
-        # transform the input stream of each step with the next
-        # steps that don't natively support transforming an input stream will
-        # buffer input in memory until all available, and then start emitting output
+        # 使用下一个步骤转换每个步骤的输入流
+        # 不原生支持转换输入流的步骤会将输入缓存在内存中，
+        # 直到所有输入都可用后再开始输出
         final_pipeline = cast("Iterator[Output]", inputs)
         for idx, step in enumerate(steps):
             config = patch_config(
@@ -3493,10 +3443,10 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
         **kwargs: Any,
     ) -> AsyncIterator[Output]:
         steps = [self.first, *self.middle, self.last]
-        # stream the last steps
-        # transform the input stream of each step with the next
-        # steps that don't natively support transforming an input stream will
-        # buffer input in memory until all available, and then start emitting output
+        # 流式处理最后的步骤
+        # 使用下一个步骤转换每个步骤的输入流
+        # 不原生支持转换输入流的步骤会将输入缓存在内存中，
+        # 直到所有输入都可用后再开始输出
         final_pipeline = cast("AsyncIterator[Output]", inputs)
         for idx, step in enumerate(steps):
             config = patch_config(
@@ -3563,19 +3513,16 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
 
 
 class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
-    """Runnable that runs a mapping of `Runnable`s in parallel.
+    """并行运行 `Runnable` 映射的可运行单元。
 
-    Returns a mapping of their outputs.
+    返回它们输出的映射。
 
-    `RunnableParallel` is one of the two main composition primitives,
-    alongside `RunnableSequence`. It invokes `Runnable`s concurrently, providing the
-    same input to each.
+    `RunnableParallel` 是两个主要的组合原语之一，另一个是 `RunnableSequence`。
+    它并发地调用 `Runnable`，向每个 `Runnable` 提供相同的输入。
 
-    A `RunnableParallel` can be instantiated directly or by using a dict literal
-    within a sequence.
+    `RunnableParallel` 可以直接实例化，也可以在序列中使用字典字面量来创建。
 
-    Here is a simple example that uses functions to illustrate the use of
-    `RunnableParallel`:
+    下面是一个使用函数来说明 `RunnableParallel` 用法的简单示例：
 
         ```python
         from langchain_core.runnables import RunnableLambda
@@ -3597,15 +3544,15 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
         runnable_2 = RunnableLambda(mul_two)
         runnable_3 = RunnableLambda(mul_three)
 
-        sequence = runnable_1 | {  # this dict is coerced to a RunnableParallel
+        sequence = runnable_1 | {  # 这个字典会被强制转换为 RunnableParallel
             "mul_two": runnable_2,
             "mul_three": runnable_3,
         }
-        # Or equivalently:
+        # 或者等效地：
         # sequence = runnable_1 | RunnableParallel(
         #     {"mul_two": runnable_2, "mul_three": runnable_3}
         # )
-        # Also equivalently:
+        # 也是等效的：
         # sequence = runnable_1 | RunnableParallel(
         #     mul_two=runnable_2,
         #     mul_three=runnable_3,
@@ -3618,8 +3565,8 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
         await sequence.abatch([1, 2, 3])
         ```
 
-    `RunnableParallel` makes it easy to run `Runnable`s in parallel. In the below
-    example, we simultaneously stream output from two different `Runnable` objects:
+    `RunnableParallel` 使得并行运行 `Runnable` 变得容易。在下面的示例中，
+    我们同时从两个不同的 `Runnable` 对象流式输出：
 
         ```python
         from langchain_core.prompts import ChatPromptTemplate
@@ -3637,7 +3584,7 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
 
         runnable = RunnableParallel(joke=joke_chain, poem=poem_chain)
 
-        # Display stream
+        # 显示流式输出
         output = {key: "" for key, _ in runnable.output_schema()}
         for chunk in runnable.stream({"topic": "bear"}):
             for key in chunk:
@@ -3834,7 +3781,7 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
     def invoke(
         self, input: Input, config: RunnableConfig | None = None, **kwargs: Any
     ) -> dict[str, Any]:
-        # setup callbacks
+        # 设置回调
         config = ensure_config(config)
         callback_manager = CallbackManager.configure(
             inheritable_callbacks=config.get("callbacks"),
@@ -3845,7 +3792,7 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
             inheritable_metadata=config.get("metadata"),
             local_metadata=None,
         )
-        # start the root run
+        # 启动根运行
         run_manager = callback_manager.on_chain_start(
             None,
             input,
@@ -3858,7 +3805,7 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
         ) -> Any:
             child_config = patch_config(
                 config,
-                # mark each step as a child run
+                # 将每个步骤标记为子运行
                 callbacks=run_manager.get_child(f"map:key:{key}"),
             )
             with set_config_context(child_config) as context:
@@ -3868,9 +3815,9 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
                     child_config,
                 )
 
-        # gather results from all steps
+        # 收集所有步骤的结果
         try:
-            # copy to avoid issues from the caller mutating the steps during invoke()
+            # 复制以避免调用者在调用过程中修改步骤时出现问题
             steps = dict(self.steps__)
 
             with get_executor_for_config(config) as executor:
@@ -3882,7 +3829,7 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
                     key: future.result()
                     for key, future in zip(steps, futures, strict=False)
                 }
-        # finish the root run
+        # 完成根运行
         except BaseException as e:
             run_manager.on_chain_error(e)
             raise
@@ -3897,10 +3844,10 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> dict[str, Any]:
-        # setup callbacks
+        # 设置回调
         config = ensure_config(config)
         callback_manager = get_async_callback_manager_for_config(config)
-        # start the root run
+        # 启动根运行
         run_manager = await callback_manager.on_chain_start(
             None,
             input,
@@ -3920,16 +3867,16 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
                     step.ainvoke(input_, child_config), context, create_task=True
                 )
 
-        # gather results from all steps
+        # 收集所有步骤的结果
         try:
-            # copy to avoid issues from the caller mutating the steps during invoke()
+            # 复制以避免调用者在调用过程中修改步骤时出现问题
             steps = dict(self.steps__)
             results = await asyncio.gather(
                 *(
                     _ainvoke_step(
                         step,
                         input,
-                        # mark each step as a child run
+                        # 将每个步骤标记为子运行
                         config,
                         key,
                     )
@@ -3937,7 +3884,7 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
                 )
             )
             output = dict(zip(steps, results, strict=False))
-        # finish the root run
+        # 完成根运行
         except BaseException as e:
             await run_manager.on_chain_error(e)
             raise
@@ -3951,13 +3898,13 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
         run_manager: CallbackManagerForChainRun,
         config: RunnableConfig,
     ) -> Iterator[AddableDict]:
-        # Shallow copy steps to ignore mutations while in progress
+        # 浅拷贝步骤以忽略进行中的修改
         steps = dict(self.steps__)
-        # Each step gets a copy of the input iterator,
-        # which is consumed in parallel in a separate thread.
+        # 每个步骤获得输入迭代器的副本，
+        # 该副本在单独的线程中被并行消费
         input_copies = list(safetee(inputs, len(steps), lock=threading.Lock()))
         with get_executor_for_config(config) as executor:
-            # Create the transform() generator for each step
+            # 为每个步骤创建 transform() 生成器
             named_generators = [
                 (
                     name,
@@ -3970,14 +3917,14 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
                 )
                 for name, step in steps.items()
             ]
-            # Start the first iteration of each generator
+            # 启动每个生成器的第一次迭代
             futures = {
                 executor.submit(next, generator): (step_name, generator)
                 for step_name, generator in named_generators
             }
-            # Yield chunks from each as they become available,
-            # and start the next iteration of that generator that yielded it.
-            # When all generators are exhausted, stop.
+            # 当每个生成器有可用输出时产生块，
+            # 并启动生成该块的生成器的下一次迭代。
+            # 当所有生成器耗尽时停止。
             while futures:
                 completed_futures, _ = wait(futures, return_when=FIRST_COMPLETED)
                 for future in completed_futures:
@@ -4018,12 +3965,12 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
         run_manager: AsyncCallbackManagerForChainRun,
         config: RunnableConfig,
     ) -> AsyncIterator[AddableDict]:
-        # Shallow copy steps to ignore mutations while in progress
+        # 浅拷贝步骤以忽略进行中的修改
         steps = dict(self.steps__)
-        # Each step gets a copy of the input iterator,
-        # which is consumed in parallel in a separate thread.
+        # 每个步骤获得输入迭代器的副本，
+        # 该副本在单独的线程中被并行消费
         input_copies = list(atee(inputs, len(steps), lock=asyncio.Lock()))
-        # Create the transform() generator for each step
+        # 为每个步骤创建 transform() 生成器
         named_generators = [
             (
                 name,
@@ -4037,18 +3984,18 @@ class RunnableParallel(RunnableSerializable[Input, dict[str, Any]]):
             for name, step in steps.items()
         ]
 
-        # Wrap in a coroutine to satisfy linter
+        # 用协程包装以满足 linter 要求
         async def get_next_chunk(generator: AsyncIterator) -> Output | None:
             return await anext(generator)
 
-        # Start the first iteration of each generator
+        # 启动每个生成器的第一次迭代
         tasks = {
             asyncio.create_task(get_next_chunk(generator)): (step_name, generator)
             for step_name, generator in named_generators
         }
-        # Yield chunks from each as they become available,
-        # and start the next iteration of the generator that yielded it.
-        # When all generators are exhausted, stop.
+        # 当每个生成器有可用输出时产生块，
+        # 并启动生成该块的生成器的下一次迭代。
+        # 当所有生成器耗尽时停止。
         while tasks:
             completed_tasks, _ = await asyncio.wait(
                 tasks, return_when=asyncio.FIRST_COMPLETED
@@ -4094,24 +4041,19 @@ RunnableMap = RunnableParallel
 
 
 class RunnableGenerator(Runnable[Input, Output]):
-    """`Runnable` that runs a generator function.
+    """运行生成器函数的 `Runnable`。
 
-    `RunnableGenerator`s can be instantiated directly or by using a generator within
-    a sequence.
+    `RunnableGenerator` 可以直接实例化，也可以在序列中使用生成器来创建。
 
-    `RunnableGenerator`s can be used to implement custom behavior, such as custom
-    output parsers, while preserving streaming capabilities. Given a generator function
-    with a signature `Iterator[A] -> Iterator[B]`, wrapping it in a
-    `RunnableGenerator` allows it to emit output chunks as soon as they are streamed
-    in from the previous step.
+    `RunnableGenerator` 可用于实现自定义行为，例如自定义输出解析器，
+    同时保留流式调用能力。对于签名 为 `Iterator[A] -> Iterator[B]` 的生成器函数，
+    将其包装在 `RunnableGenerator` 中可以使其在从上一个步骤流式输入时立即发出输出块。
 
     !!! note
-        If a generator function has a `signature A -> Iterator[B]`, such that it
-        requires its input from the previous step to be completed before emitting chunks
-        (e.g., most LLMs need the entire prompt available to start generating), it can
-        instead be wrapped in a `RunnableLambda`.
+        如果生成器函数的签名为 `A -> Iterator[B]`，即需要上一个步骤完成才能开始发出块
+        （例如，大多数 LLM 需要整个提示可用才能开始生成），则可以改用 `RunnableLambda` 包装。
 
-    Here is an example to show the basic mechanics of a `RunnableGenerator`:
+    下面是一个展示 `RunnableGenerator` 基本机制的示例：
 
         ```python
         from typing import Any, AsyncIterator, Iterator
@@ -4130,7 +4072,7 @@ class RunnableGenerator(Runnable[Input, Output]):
         runnable.batch([None, None])  # ["Have a nice day", "Have a nice day"]
 
 
-        # Async version:
+        # 异步版本：
         async def agen(input: AsyncIterator[Any]) -> AsyncIterator[str]:
             for token in ["Have", " a", " nice", " day"]:
                 yield token
@@ -4141,8 +4083,7 @@ class RunnableGenerator(Runnable[Input, Output]):
         [p async for p in runnable.astream(None)]  # ["Have", " a", " nice", " day"]
         ```
 
-    `RunnableGenerator` makes it easy to implement custom behavior within a streaming
-    context. Below we show an example:
+    `RunnableGenerator` 使得在流式调用上下文中实现自定义行为变得容易。下面是一个示例：
 
         ```python
         from langchain_core.prompts import ChatPromptTemplate
@@ -4172,10 +4113,10 @@ class RunnableGenerator(Runnable[Input, Output]):
         "".join(runnable.stream({"topic": "waste"}))  # Reduce👏, Reuse👏, Recycle👏.
 
 
-        # Note that RunnableLambda can be used to delay streaming of one step in a
-        # sequence until the previous step is finished:
+        # 注意，RunnableLambda 可用于延迟序列中某个步骤的流式输出，
+        # 直到前一个步骤完成：
         def reverse_generator(input: str) -> Iterator[str]:
-            # Yield characters of input in reverse order.
+            # 以逆序产生输入的字符
             for character in input[::-1]:
                 yield character
 
@@ -4260,9 +4201,8 @@ class RunnableGenerator(Runnable[Input, Output]):
         return create_model_v2(
             self.get_name("Input"),
             root=root_type,
-            # To create the schema, we need to provide the module
-            # where the underlying function is defined.
-            # This allows pydantic to resolve type annotations appropriately.
+            # 为了创建模式，我们需要提供底层函数定义的模块。
+            # 这允许 pydantic 适当解析类型注解。
             module_name=module,
         )
 
@@ -4397,25 +4337,20 @@ class RunnableGenerator(Runnable[Input, Output]):
 
 
 class RunnableLambda(Runnable[Input, Output]):
-    """`RunnableLambda` converts a python callable into a `Runnable`.
+    """`RunnableLambda` 将 Python 可调用对象转换为 `Runnable`。
 
-    Wrapping a callable in a `RunnableLambda` makes the callable usable
-    within either a sync or async context.
+    将可调用对象包装在 `RunnableLambda` 中使其可以在同步或异步上下文中使用。
 
-    `RunnableLambda` can be composed as any other `Runnable` and provides
-    seamless integration with LangChain tracing.
+    `RunnableLambda` 可以像其他 `Runnable` 一样组合，并提供与 LangChain 追踪的无缝集成。
 
-    `RunnableLambda` is best suited for code that does not need to support
-    streaming. If you need to support streaming (i.e., be able to operate
-    on chunks of inputs and yield chunks of outputs), use `RunnableGenerator`
-    instead.
+    `RunnableLambda` 最适合不需要支持流式调用的代码。如果需要支持流式调用
+    （即能够处理输入块并产生输出块），请改用 `RunnableGenerator`。
 
-    Note that if a `RunnableLambda` returns an instance of `Runnable`, that
-    instance is invoked (or streamed) during execution.
+    请注意，如果 `RunnableLambda` 返回 `Runnable` 的实例，则该实例在执行期间会被调用（或流式调用）。
 
-    Examples:
+    示例：
         ```python
-        # This is a RunnableLambda
+        # 这是一个 RunnableLambda
         from langchain_core.runnables import RunnableLambda
 
 
@@ -4425,22 +4360,22 @@ class RunnableLambda(Runnable[Input, Output]):
 
         runnable = RunnableLambda(add_one)
 
-        runnable.invoke(1)  # returns 2
-        runnable.batch([1, 2, 3])  # returns [2, 3, 4]
+        runnable.invoke(1)  # 返回 2
+        runnable.batch([1, 2, 3])  # 返回 [2, 3, 4]
 
-        # Async is supported by default by delegating to the sync implementation
-        await runnable.ainvoke(1)  # returns 2
-        await runnable.abatch([1, 2, 3])  # returns [2, 3, 4]
+        # 默认支持异步，委托给同步实现
+        await runnable.ainvoke(1)  # 返回 2
+        await runnable.abatch([1, 2, 3])  # 返回 [2, 3, 4]
 
 
-        # Alternatively, can provide both synd and sync implementations
+        # 或者，可以同时提供同步和异步实现
         async def add_one_async(x: int) -> int:
             return x + 1
 
 
         runnable = RunnableLambda(add_one, afunc=add_one_async)
-        runnable.invoke(1)  # Uses add_one
-        await runnable.ainvoke(1)  # Uses add_one_async
+        runnable.invoke(1)  # 使用 add_one
+        await runnable.ainvoke(1)  # 使用 add_one_async
         ```
     """
 
@@ -4601,20 +4536,19 @@ class RunnableLambda(Runnable[Input, Output]):
         | None = None,
         name: str | None = None,
     ) -> None:
-        """Create a `RunnableLambda` from a callable, and async callable or both.
+        """从可调用对象、异步可调用对象或两者创建 `RunnableLambda`。
 
-        Accepts both sync and async variants to allow providing efficient
-        implementations for sync and async execution.
+        接受同步和异步变体，以允许为同步和异步执行提供高效实现。
 
         Args:
-            func: Either sync or async callable
-            afunc: An async callable that takes an input and returns an output.
+            func: 同步或异步可调用对象
+            afunc: 接受输入并返回输出的异步可调用对象。
 
-            name: The name of the `Runnable`.
+            name: `Runnable` 的名称。
 
         Raises:
-            TypeError: If the `func` is not a callable type.
-            TypeError: If both `func` and `afunc` are provided.
+            TypeError: 如果 `func` 不是可调用类型。
+            TypeError: 如果同时提供了 `func` 和 `afunc`。
 
         """
         if afunc is not None:
@@ -4679,24 +4613,23 @@ class RunnableLambda(Runnable[Input, Output]):
         func = getattr(self, "func", None) or self.afunc
 
         if isinstance(func, itemgetter):
-            # This is terrible, but afaict it's not possible to access _items
-            # on itemgetter objects, so we have to parse the repr
+            # 这很糟糕，但据我所知，无法访问 itemgetter 对象上的 _items，
+            # 所以我们必须解析 repr
             items = str(func).replace("operator.itemgetter(", "")[:-1].split(", ")
             if all(
                 item[0] == "'" and item[-1] == "'" and item != "''" for item in items
             ):
                 fields = {item[1:-1]: (Any, ...) for item in items}
-                # It's a dict, lol
+                # 这是一个字典
                 return create_model_v2(self.get_name("Input"), field_definitions=fields)
             module = getattr(func, "__module__", None)
-            return create_model_v2(
-                self.get_name("Input"),
-                root=list[Any],
-                # To create the schema, we need to provide the module
-                # where the underlying function is defined.
-                # This allows pydantic to resolve type annotations appropriately.
-                module_name=module,
-            )
+        return create_model_v2(
+            self.get_name("Output"),
+            root=root_type,
+            # 为了创建模式，我们需要提供底层函数定义的模块。
+            # 这允许 pydantic 适当解析类型注解。
+            module_name=module,
+        )
 
         if self.InputType != Any:
             return super().get_input_schema(config)
@@ -4737,9 +4670,8 @@ class RunnableLambda(Runnable[Input, Output]):
     def get_output_schema(
         self, config: RunnableConfig | None = None
     ) -> type[BaseModel]:
-        # Override the default implementation.
-        # For a runnable lambda, we need to bring to provide the
-        # module of the underlying function when creating the model.
+        # 重写默认实现。
+        # 对于可运行 lambda，我们需要在创建模型时提供底层函数的模块。
         root_type = self.OutputType
         func = getattr(self, "func", None) or self.afunc
         module = getattr(func, "__module__", None)
@@ -4754,9 +4686,8 @@ class RunnableLambda(Runnable[Input, Output]):
         return create_model_v2(
             self.get_name("Output"),
             root=root_type,
-            # To create the schema, we need to provide the module
-            # where the underlying function is defined.
-            # This allows pydantic to resolve type annotations appropriately.
+            # 为了创建模式，我们需要提供底层函数定义的模块。
+            # 这允许 pydantic 适当解析类型注解。
             module_name=module,
         )
 
@@ -4875,7 +4806,7 @@ class RunnableLambda(Runnable[Input, Output]):
             output = call_func_with_variable_args(
                 self.func, input_, config, run_manager, **kwargs
             )
-        # If the output is a Runnable, invoke it
+        # 如果输出是 Runnable，则调用它
         if isinstance(output, Runnable):
             recursion_limit = config["recursion_limit"]
             if recursion_limit <= 0:
@@ -4975,7 +4906,7 @@ class RunnableLambda(Runnable[Input, Output]):
             output = await acall_func_with_variable_args(
                 cast("Callable", afunc), value, config, run_manager, **kwargs
             )
-        # If the output is a Runnable, invoke it
+        # 如果输出是 Runnable，则调用它
         if isinstance(output, Runnable):
             recursion_limit = config["recursion_limit"]
             if recursion_limit <= 0:
@@ -5059,10 +4990,9 @@ class RunnableLambda(Runnable[Input, Output]):
         final: Input
         got_first_val = False
         for ichunk in chunks:
-            # By definitions, RunnableLambdas consume all input before emitting output.
-            # If the input is not addable, then we'll assume that we can
-            # only operate on the last chunk.
-            # So we'll iterate until we get to the last chunk!
+            # 根据定义，RunnableLambda 在发出输出之前会消费所有输入。
+            # 如果输入不可添加，那么我们假设只能操作最后一个块。
+            # 所以我们会迭代直到到达最后一个块！
             if not got_first_val:
                 final = ichunk
                 got_first_val = True
@@ -5090,7 +5020,7 @@ class RunnableLambda(Runnable[Input, Output]):
                 self.func, final, config, run_manager, **kwargs
             )
 
-        # If the output is a Runnable, use its stream output
+        # 如果输出是 Runnable，使用它的流式输出
         if isinstance(output, Runnable):
             recursion_limit = config["recursion_limit"]
             if recursion_limit <= 0:
@@ -5108,7 +5038,7 @@ class RunnableLambda(Runnable[Input, Output]):
             ):
                 yield chunk
         elif not inspect.isgeneratorfunction(self.func):
-            # Otherwise, just yield it
+            # 否则，直接产生它
             yield cast("Output", output)
 
     @override
@@ -5151,10 +5081,9 @@ class RunnableLambda(Runnable[Input, Output]):
         final: Input
         got_first_val = False
         async for ichunk in chunks:
-            # By definitions, RunnableLambdas consume all input before emitting output.
-            # If the input is not addable, then we'll assume that we can
-            # only operate on the last chunk.
-            # So we'll iterate until we get to the last chunk!
+            # 根据定义，RunnableLambda 在发出输出之前会消费所有输入。
+            # 如果输入不可添加，那么我们假设只能操作最后一个块。
+            # 所以我们会迭代直到到达最后一个块！
             if not got_first_val:
                 final = ichunk
                 got_first_val = True
@@ -5219,7 +5148,7 @@ class RunnableLambda(Runnable[Input, Output]):
                 **kwargs,
             )
 
-        # If the output is a Runnable, use its astream output
+        # 如果输出是 Runnable，使用它的异步流式输出
         if isinstance(output, Runnable):
             recursion_limit = config["recursion_limit"]
             if recursion_limit <= 0:
@@ -5237,7 +5166,7 @@ class RunnableLambda(Runnable[Input, Output]):
             ):
                 yield chunk
         elif not is_async_generator(afunc):
-            # Otherwise, just yield it
+            # 否则，直接产生它
             yield cast("Output", output)
 
     @override
@@ -5270,14 +5199,13 @@ class RunnableLambda(Runnable[Input, Output]):
 
 
 class RunnableEachBase(RunnableSerializable[list[Input], list[Output]]):
-    """RunnableEachBase class.
+    """RunnableEachBase 类。
 
-    `Runnable` that calls another `Runnable` for each element of the input sequence.
+    对输入序列的每个元素调用另一个 `Runnable` 的 `Runnable`。
 
-    Use only if creating a new `RunnableEach` subclass with different `__init__`
-    args.
+    仅在创建具有不同 `__init__` 参数的新 `RunnableEach` 子类时使用。
 
-    See documentation for `RunnableEach` for more details.
+    有关详细信息请参阅 `RunnableEach` 的文档。
 
     """
 
@@ -5300,13 +5228,10 @@ class RunnableEachBase(RunnableSerializable[list[Input], list[Output]]):
                 list[self.bound.get_input_schema(config)],  # type: ignore[misc]
                 None,
             ),
-            # create model needs access to appropriate type annotations to be
-            # able to construct the Pydantic model.
-            # When we create the model, we pass information about the namespace
-            # where the model is being created, so the type annotations can
-            # be resolved correctly as well.
-            # self.__class__.__module__ handles the case when the Runnable is
-            # being sub-classed in a different module.
+            # 创建模型需要访问适当的类型注解才能构造 Pydantic 模型。
+            # 当我们创建模型时，我们传递有关创建模型的命名空间的信息，
+            # 以便类型注解也可以被正确解析。
+            # self.__class__.__module__ 处理 Runnable 在不同模块中被子类化的情况。
             module_name=self.__class__.__module__,
         )
 
@@ -5323,13 +5248,10 @@ class RunnableEachBase(RunnableSerializable[list[Input], list[Output]]):
         return create_model_v2(
             self.get_name("Output"),
             root=list[schema],  # type: ignore[valid-type]
-            # create model needs access to appropriate type annotations to be
-            # able to construct the Pydantic model.
-            # When we create the model, we pass information about the namespace
-            # where the model is being created, so the type annotations can
-            # be resolved correctly as well.
-            # self.__class__.__module__ handles the case when the Runnable is
-            # being sub-classed in a different module.
+            # 创建模型需要访问适当的类型注解才能构造 Pydantic 模型。
+            # 当我们创建模型时，我们传递有关创建模型的命名空间的信息，
+            # 以便类型注解也可以被正确解析。
+            # self.__class__.__module__ 处理 Runnable 在不同模块中被子类化的情况。
             module_name=self.__class__.__module__,
         )
 
@@ -5411,15 +5333,15 @@ class RunnableEachBase(RunnableSerializable[list[Input], list[Output]]):
 
 
 class RunnableEach(RunnableEachBase[Input, Output]):
-    """RunnableEach class.
+    """RunnableEach 类。
 
-    `Runnable` that calls another `Runnable` for each element of the input sequence.
+    对输入序列的每个元素调用另一个 `Runnable` 的 `Runnable`。
 
-    It allows you to call multiple inputs with the bounded `Runnable`.
+    它允许使用绑定的 `Runnable` 调用多个输入。
 
-    `RunnableEach` makes it easy to run multiple inputs for the `Runnable`.
-    In the below example, we associate and run three inputs
-    with a `Runnable`:
+    `RunnableEach` 使得为 `Runnable` 运行多个输入变得容易。
+    在下面的示例中，我们关联并运行三个输入
+    与一个 `Runnable`：
 
         ```python
         from langchain_core.runnables.base import RunnableEach
@@ -5500,24 +5422,21 @@ class RunnableEach(RunnableEachBase[Input, Output]):
         on_end: AsyncListener | None = None,
         on_error: AsyncListener | None = None,
     ) -> RunnableEach[Input, Output]:
-        """Bind async lifecycle listeners to a `Runnable`.
+        """绑定异步生命周期监听器到 `Runnable`。
 
-        Returns a new `Runnable`.
+        返回一个新的 `Runnable`。
 
-        The `Run` object contains information about the run, including its `id`,
-        `type`, `input`, `output`, `error`, `start_time`, `end_time`, and
-        any tags or metadata added to the run.
+        `Run` 对象包含有关运行的信息，包括其 `id`、
+        `type`、`input`、`output`、`error`、`start_time`、`end_time` 以及
+        添加到运行中的任何标签或元数据。
 
         Args:
-            on_start: Called asynchronously before the `Runnable` starts running,
-                with the `Run` object.
-            on_end: Called asynchronously after the `Runnable` finishes running,
-                with the `Run` object.
-            on_error: Called asynchronously if the `Runnable` throws an error,
-                with the `Run` object.
+            on_start: 在 `Runnable` 开始运行之前异步调用，传入 `Run` 对象。
+            on_end: 在 `Runnable` 运行完成后异步调用，传入 `Run` 对象。
+            on_error: 如果 `Runnable` 抛出错误，则异步调用，传入 `Run` 对象。
 
         Returns:
-            A new `Runnable` with the listeners bound.
+            绑定了监听器的新 `Runnable`。
 
         """
         return RunnableEach(
@@ -5528,12 +5447,11 @@ class RunnableEach(RunnableEachBase[Input, Output]):
 
 
 class RunnableBindingBase(RunnableSerializable[Input, Output]):  # type: ignore[no-redef]
-    """`Runnable` that delegates calls to another `Runnable` with a set of `**kwargs`.
+    """使用一组 `**kwargs` 将调用委托给另一个 `Runnable` 的 `Runnable`。
 
-    Use only if creating a new `RunnableBinding` subclass with different `__init__`
-    args.
+    仅在创建具有不同 `__init__` 参数的新 `RunnableBinding` 子类时使用。
 
-    See documentation for `RunnableBinding` for more details.
+    有关详细信息请参阅 `RunnableBinding` 的文档。
 
     """
 
@@ -5615,9 +5533,9 @@ class RunnableBindingBase(RunnableSerializable[Input, Output]):  # type: ignore[
             custom_output_type=custom_output_type,
             **other_kwargs,
         )
-        # if we don't explicitly set config to the TypedDict here,
-        # the pydantic init above will strip out any of the "extra"
-        # fields even though total=False on the typed dict.
+        # 如果我们不在这里将 config 显式设置为 TypedDict，
+        # 上面的 pydantic init 将剥离所有 "extra" 字段，
+        # 即使 TypedDict 上的 total=False。
         self.config = config or {}
 
     @override
@@ -5793,7 +5711,7 @@ class RunnableBindingBase(RunnableSerializable[Input, Output]):  # type: ignore[
             )
         else:
             configs = [self._merge_configs(config) for _ in range(len(inputs))]
-        # lol mypy
+        # 哈哈 mypy
         if return_exceptions:
             yield from self.bound.batch_as_completed(
                 inputs,
@@ -5930,52 +5848,48 @@ class RunnableBindingBase(RunnableSerializable[Input, Output]):  # type: ignore[
 
 
 class RunnableBinding(RunnableBindingBase[Input, Output]):  # type: ignore[no-redef]
-    """Wrap a `Runnable` with additional functionality.
+    """用附加功能包装 `Runnable`。
 
-    A `RunnableBinding` can be thought of as a "runnable decorator" that
-    preserves the essential features of `Runnable`; i.e., batching, streaming,
-    and async support, while adding additional functionality.
+    `RunnableBinding` 可以被看作是一个"可运行单元装饰器"，它保留了 `Runnable` 的基本特性；
+    即批量调用、流式调用和异步支持，同时添加了额外的功能。
 
-    Any class that inherits from `Runnable` can be bound to a `RunnableBinding`.
-    Runnables expose a standard set of methods for creating `RunnableBindings`
-    or sub-classes of `RunnableBindings` (e.g., `RunnableRetry`,
-    `RunnableWithFallbacks`) that add additional functionality.
+    任何继承自 `Runnable` 的类都可以绑定到 `RunnableBinding`。
+    可运行单元暴露了一组标准方法，用于创建 `RunnableBinding`
+    或 `RunnableBinding` 的子类（如 `RunnableRetry`、`RunnableWithFallbacks`），
+    以添加额外的功能。
 
-    These methods include:
+    这些方法包括：
 
-    - `bind`: Bind kwargs to pass to the underlying `Runnable` when running it.
-    - `with_config`: Bind config to pass to the underlying `Runnable` when running
-        it.
-    - `with_listeners`:  Bind lifecycle listeners to the underlying `Runnable`.
-    - `with_types`: Override the input and output types of the underlying
-        `Runnable`.
-    - `with_retry`: Bind a retry policy to the underlying `Runnable`.
-    - `with_fallbacks`: Bind a fallback policy to the underlying `Runnable`.
+    - `bind`: 绑定要传递给底层 `Runnable` 的 kwargs。
+    - `with_config`: 绑定要传递给底层 `Runnable` 的配置。
+    - `with_listeners`: 绑定生命周期监听器到底层 `Runnable`。
+    - `with_types`: 覆盖底层 `Runnable` 的输入和输出类型。
+    - `with_retry`: 绑定重试策略到底层 `Runnable`。
+    - `with_fallbacks`: 绑定后备策略到底层 `Runnable`。
 
-    Example:
-    `bind`: Bind kwargs to pass to the underlying `Runnable` when running it.
+    示例：
+    `bind`: 绑定要传递给底层 `Runnable` 的 kwargs。
 
         ```python
-        # Create a Runnable binding that invokes the chat model with the
-        # additional kwarg `stop=['-']` when running it.
+        # 创建一个 Runnable binding，在运行聊天模型时
+        # 添加额外的 kwarg `stop=['-']`
         from langchain_openai import ChatOpenAI
 
         model = ChatOpenAI()
         model.invoke('Say "Parrot-MAGIC"', stop=["-"])  # Should return `Parrot`
-        # Using it the easy way via `bind` method which returns a new
+        # 通过 `bind` 方法的简单方式来使用，它返回一个新的
         # RunnableBinding
         runnable_binding = model.bind(stop=["-"])
         runnable_binding.invoke('Say "Parrot-MAGIC"')  # Should return `Parrot`
         ```
-        Can also be done by instantiating a `RunnableBinding` directly (not
-        recommended):
+        也可以通过直接实例化 `RunnableBinding` 来完成（不推荐）：
 
         ```python
         from langchain_core.runnables import RunnableBinding
 
         runnable_binding = RunnableBinding(
             bound=model,
-            kwargs={"stop": ["-"]},  # <-- Note the additional kwargs
+            kwargs={"stop": ["-"]},  # <-- 注意额外的 kwargs
         )
         runnable_binding.invoke('Say "Parrot-MAGIC"')  # Should return `Parrot`
         ```
@@ -6174,16 +6088,16 @@ RunnableLike = (
 
 
 def coerce_to_runnable(thing: RunnableLike) -> Runnable[Input, Output]:
-    """Coerce a `Runnable`-like object into a `Runnable`.
+    """将类 `Runnable` 对象强制转换为 `Runnable`。
 
     Args:
-        thing: A `Runnable`-like object.
+        thing: 类 `Runnable` 对象。
 
     Returns:
-        A `Runnable`.
+        一个 `Runnable`。
 
     Raises:
-        TypeError: If the object is not `Runnable`-like.
+        TypeError: 如果对象不是类 `Runnable`。
     """
     if isinstance(thing, Runnable):
         return thing
@@ -6230,16 +6144,16 @@ def chain(
     | Callable[[Input], Coroutine[Any, Any, Output]]
     | Callable[[Input], AsyncIterator[Output]],
 ) -> Runnable[Input, Output]:
-    """Decorate a function to make it a `Runnable`.
+    """装饰函数以使其成为 `Runnable`。
 
-    Sets the name of the `Runnable` to the name of the function.
-    Any runnables called by the function will be traced as dependencies.
+    将 `Runnable` 的名称设置为函数的名称。
+    函数调用的任何 runnable 将被追踪为依赖项。
 
     Args:
-        func: A `Callable`.
+        func: 一个 `Callable`。
 
     Returns:
-        A `Runnable`.
+        一个 `Runnable`。
 
     Example:
         ```python

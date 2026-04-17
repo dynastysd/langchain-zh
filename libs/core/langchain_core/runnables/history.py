@@ -1,4 +1,4 @@
-"""`Runnable` that manages chat message history for another `Runnable`."""
+"""消息历史链（RunnableWithMessageHistory）：为其他 Runnable 管理聊天消息历史。"""
 
 from __future__ import annotations
 
@@ -36,40 +36,34 @@ GetSessionHistoryCallable = Callable[..., BaseChatMessageHistory]
 
 
 class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
-    """`Runnable` that manages chat message history for another `Runnable`.
+    """消息历史链（RunnableWithMessageHistory）：为其他 Runnable 管理聊天消息历史。
 
-    A chat message history is a sequence of messages that represent a conversation.
+    聊天消息历史是表示对话的一系列消息。
 
-    `RunnableWithMessageHistory` wraps another `Runnable` and manages the chat message
-    history for it; it is responsible for reading and updating the chat message
-    history.
+    消息历史链包装另一个 Runnable 并为其管理聊天消息历史；
+    它负责读取和更新聊天消息历史。
 
-    The formats supported for the inputs and outputs of the wrapped `Runnable`
-    are described below.
+    下方描述了被包装的 Runnable 所支持的输入和输出格式。
 
-    `RunnableWithMessageHistory` must always be called with a config that contains
-    the appropriate parameters for the chat message history factory.
+    消息历史链必须始终使用包含聊天消息历史工厂适当参数的 config 来调用。
 
-    By default, the `Runnable` is expected to take a single configuration parameter
-    called `session_id` which is a string. This parameter is used to create a new
-    or look up an existing chat message history that matches the given `session_id`.
+    默认情况下，Runnable 需要一个名为 `session_id` 的单一配置参数（字符串类型）。
+    此参数用于创建新的或查找与给定 `session_id` 匹配的现有聊天消息历史。
 
-    In this case, the invocation would look like this:
+    在这种情况下，调用如下所示：
 
     `with_history.invoke(..., config={"configurable": {"session_id": "bar"}})`
-    ; e.g., `{"configurable": {"session_id": "<SESSION_ID>"}}`.
+    ; 例如：`{"configurable": {"session_id": "<SESSION_ID>"}}`。
 
-    The configuration can be customized by passing in a list of
-    `ConfigurableFieldSpec` objects to the `history_factory_config` parameter (see
-    example below).
+    可以通过向 `history_factory_config` 参数传递 `ConfigurableFieldSpec`（可配置字段规范）对象列表
+    来自定义配置（见下方示例）。
 
-    In the examples, we will use a chat message history with an in-memory
-    implementation to make it easy to experiment and see the results.
+    在示例中，我们将使用内存实现的聊天消息历史，以便于实验和查看结果。
 
-    For production use cases, you will want to use a persistent implementation
-    of chat message history, such as `RedisChatMessageHistory`.
+    对于生产环境，您需要使用持久化的聊天消息历史实现，
+    例如 `RedisChatMessageHistory`。
 
-    Example: Chat message history with an in-memory implementation for testing.
+    示例：使用内存实现进行测试的聊天消息历史。
 
         ```python
         from operator import itemgetter
@@ -139,8 +133,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
 
         chain_with_history = RunnableWithMessageHistory(
             chain,
-            # Uses the get_by_session_id function defined in the example
-            # above.
+            # 使用上方示例中定义的 get_by_session_id 函数
             get_by_session_id,
             input_messages_key="question",
             history_messages_key="history",
@@ -153,7 +146,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
             )
         )
 
-        # Uses the store defined in the example above.
+        # 使用上方示例中定义的存储
         print(store)  # noqa: T201
 
         print(
@@ -166,7 +159,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
         print(store)  # noqa: T201
         ```
 
-    Example where the session factory takes two keys (`user_id` and `conversation_id`):
+    示例：会话工厂接受两个键（`user_id` 和 `conversation_id`）：
 
         ```python
         store = {}
@@ -223,27 +216,26 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
     """
 
     get_session_history: GetSessionHistoryCallable
-    """Function that returns a new `BaseChatMessageHistory`.
+    """返回新的 BaseChatMessageHistory（聊天历史基类）的函数。
 
-    This function should either take a single positional argument `session_id` of type
-    string and return a corresponding chat message history instance
+    此函数可以接受一个类型为字符串的单一位置参数 `session_id`，
+    并返回相应的聊天消息历史实例。
     """
     input_messages_key: str | None = None
-    """Must be specified if the base `Runnable` accepts a `dict` as input.
-    The key in the input `dict` that contains the messages.
+    """如果基础 Runnable 接受 dict 作为输入，则必须指定。
+    输入 dict 中包含消息的键。
     """
     output_messages_key: str | None = None
-    """Must be specified if the base `Runnable` returns a `dict` as output.
-    The key in the output `dict` that contains the messages.
+    """如果基础 Runnable 返回 dict 作为输出，则必须指定。
+    输出 dict 中包含消息的键。
     """
     history_messages_key: str | None = None
-    """Must be specified if the base `Runnable` accepts a `dict` as input and expects a
-    separate key for historical messages.
+    """如果基础 Runnable 接受 dict 作为输入并期望使用单独的键来存储历史消息，则必须指定。
     """
     history_factory_config: Sequence[ConfigurableFieldSpec]
-    """Configure fields that should be passed to the chat history factory.
+    """配置应传递给聊天历史工厂的字段。
 
-    See `ConfigurableFieldSpec` for more details.
+    详见 `ConfigurableFieldSpec`（可配置字段规范）。
     """
 
     def __init__(
@@ -261,31 +253,28 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
         history_factory_config: Sequence[ConfigurableFieldSpec] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Initialize `RunnableWithMessageHistory`.
+        """初始化消息历史链（RunnableWithMessageHistory）。
 
         Args:
-            runnable: The base `Runnable` to be wrapped.
+            runnable: 要包装的基础 Runnable（可运行单元）。
 
-                Must take as input one of:
+                必须接受以下之一作为输入：
 
-                1. A list of `BaseMessage`
-                2. A `dict` with one key for all messages
-                3. A `dict` with one key for the current input string/message(s) and
-                    a separate key for historical messages. If the input key points
-                    to a string, it will be treated as a `HumanMessage` in history.
+                1. BaseMessage（消息基类）的列表
+                2. 包含所有消息的单个键的 dict
+                3. 包含当前输入字符串/消息的单个键和历史消息的单独键的 dict。
+                   如果输入键指向字符串，它将在历史中被视为 HumanMessage（用户消息）。
 
-                Must return as output one of:
+                必须返回以下之一作为输出：
 
-                1. A string which can be treated as an `AIMessage`
-                2. A `BaseMessage` or sequence of `BaseMessage`
-                3. A `dict` with a key for a `BaseMessage` or sequence of
-                    `BaseMessage`
+                1. 可视为 AIMessage（AI 消息）的字符串
+                2. BaseMessage 或 BaseMessage 序列
+                3. 包含 BaseMessage 或 BaseMessage 序列的键的 dict
 
-            get_session_history: Function that returns a new `BaseChatMessageHistory`.
+            get_session_history: 返回新的 BaseChatMessageHistory（聊天历史基类）的函数。
 
-                This function should either take a single positional argument
-                `session_id` of type string and return a corresponding
-                chat message history instance.
+                此函数可以接受一个类型为字符串的位置参数 `session_id`，
+                并返回相应的聊天消息历史实例。
 
                 ```python
                 def get_session_history(
@@ -293,9 +282,8 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
                 ) -> BaseChatMessageHistory: ...
                 ```
 
-                Or it should take keyword arguments that match the keys of
-                `session_history_config_specs` and return a corresponding
-                chat message history instance.
+                或者，它可以接受与 session_history_config_specs 的键匹配的关键字参数，
+                并返回相应的聊天消息历史实例。
 
                 ```python
                 def get_session_history(
@@ -305,19 +293,16 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
                 ) -> BaseChatMessageHistory: ...
                 ```
 
-            input_messages_key: Must be specified if the base runnable accepts a `dict`
-                as input.
-            output_messages_key: Must be specified if the base runnable returns a `dict`
-                as output.
-            history_messages_key: Must be specified if the base runnable accepts a
-                `dict` as input and expects a separate key for historical messages.
-            history_factory_config: Configure fields that should be passed to the
-                chat history factory. See `ConfigurableFieldSpec` for more details.
+            input_messages_key: 如果基础 runnable 接受 dict 作为输入，则必须指定。
+            output_messages_key: 如果基础 runnable 返回 dict 作为输出，则必须指定。
+            history_messages_key: 如果基础 runnable 接受 dict 作为输入，
+                并期望使用单独的键来存储历史消息，则必须指定。
+            history_factory_config: 配置应传递给聊天历史工厂的字段。
+                详见 `ConfigurableFieldSpec`（可配置字段规范）。
 
-                Specifying these allows you to pass multiple config keys into the
-                `get_session_history` factory.
-            **kwargs: Arbitrary additional kwargs to pass to parent class
-                `RunnableBindingBase` init.
+                指定这些字段允许您将多个配置键传递给 `get_session_history` 工厂。
+            **kwargs: 传递给父类 RunnableBindingBase（绑定运行单元基类） init 的
+                任意额外关键字参数。
 
         """
         history_chain: Runnable[Any, Any] = RunnableLambda(
@@ -375,7 +360,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
     @property
     @override
     def config_specs(self) -> list[ConfigurableFieldSpec]:
-        """Get the configuration specs for the `RunnableWithMessageHistory`."""
+        """获取消息历史链（RunnableWithMessageHistory）的配置规范。"""
         return get_unique_config_specs(
             super().config_specs + list(self.history_factory_config)
         )
@@ -411,19 +396,18 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
     def get_output_schema(
         self, config: RunnableConfig | None = None
     ) -> type[BaseModel]:
-        """Get a Pydantic model that can be used to validate output to the `Runnable`.
+        """获取可用于验证 Runnable 输出的 Pydantic 模型。
 
-        `Runnable` objects that leverage the `configurable_fields` and
-        `configurable_alternatives` methods will have a dynamic output schema that
-        depends on which configuration the `Runnable` is invoked with.
+        使用 `configurable_fields` 和 `configurable_alternatives` 方法的 Runnable 对象
+        将具有动态输出模式，具体取决于使用哪种配置调用 Runnable。
 
-        This method allows to get an output schema for a specific configuration.
+        此方法允许获取特定配置的输出模式。
 
         Args:
-            config: A config to use when generating the schema.
+            config: 生成模式时使用的配置。
 
         Returns:
-            A Pydantic model that can be used to validate output.
+            可用于验证输出的 Pydantic 模型。
         """
         root_type = self.OutputType
 
@@ -443,7 +427,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
     def _get_input_messages(
         self, input_val: str | BaseMessage | Sequence[BaseMessage] | dict
     ) -> list[BaseMessage]:
-        # If dictionary, try to pluck the single key representing messages
+        # 如果是字典，尝试提取表示消息的单个键
         if isinstance(input_val, dict):
             if self.input_messages_key:
                 key = self.input_messages_key
@@ -453,19 +437,19 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
                 key = "input"
             input_val = input_val[key]
 
-        # If value is a string, convert to a human message
+        # 如果值是字符串，转换为用户消息
         if isinstance(input_val, str):
             return [HumanMessage(content=input_val)]
-        # If value is a single message, convert to a list
+        # 如果值是单个消息，转换为列表
         if isinstance(input_val, BaseMessage):
             return [input_val]
-        # If value is a list or tuple...
+        # 如果值是列表或元组...
         if isinstance(input_val, (list, tuple)):
-            # Handle empty case
+            # 处理空情况
             if len(input_val) == 0:
                 return list(input_val)
-            # If is a list of list, then return the first value
-            # This occurs for chat models - since we batch inputs
+            # 如果是列表的列表，则返回第一个值
+            # 这发生在聊天模型中——因为我们批处理输入
             if isinstance(input_val[0], list):
                 if len(input_val) != 1:
                     msg = f"Expected a single list of messages. Got {input_val}."
@@ -481,7 +465,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
     def _get_output_messages(
         self, output_val: str | BaseMessage | Sequence[BaseMessage] | dict
     ) -> list[BaseMessage]:
-        # If dictionary, try to pluck the single key representing messages
+        # 如果是字典，尝试提取表示消息的单个键
         if isinstance(output_val, dict):
             if self.output_messages_key:
                 key = self.output_messages_key
@@ -489,8 +473,8 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
                 key = next(iter(output_val.keys()))
             else:
                 key = "output"
-            # If you are wrapping a chat model directly
-            # The output is actually this weird generations object
+            # 如果直接包装聊天模型
+            # 输出实际上是这个奇怪的 generations 对象
             if key not in output_val and "generations" in output_val:
                 output_val = output_val["generations"][0][0]["message"]
             else:
@@ -498,7 +482,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
 
         if isinstance(output_val, str):
             return [AIMessage(content=output_val)]
-        # If value is a single message, convert to a list
+        # 如果值是单个消息，转换为列表
         if isinstance(output_val, BaseMessage):
             return [output_val]
         if isinstance(output_val, (list, tuple)):
@@ -514,7 +498,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
         messages = hist.messages.copy()
 
         if not self.history_messages_key:
-            # return all messages
+            # 返回所有消息
             input_val = (
                 value if not self.input_messages_key else value[self.input_messages_key]
             )
@@ -528,7 +512,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
         messages = (await hist.aget_messages()).copy()
 
         if not self.history_messages_key:
-            # return all messages
+            # 返回所有消息
             input_val = (
                 value if not self.input_messages_key else value[self.input_messages_key]
             )
@@ -538,16 +522,16 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
     def _exit_history(self, run: Run, config: RunnableConfig) -> None:
         hist: BaseChatMessageHistory = config["configurable"]["message_history"]
 
-        # Get the input messages
+        # 获取输入消息
         inputs = load(run.inputs, allowed_objects="all")
         input_messages = self._get_input_messages(inputs)
-        # If historic messages were prepended to the input messages, remove them to
-        # avoid adding duplicate messages to history.
+        # 如果历史消息被预先添加到输入消息中，请移除它们
+        # 以避免向历史记录添加重复消息
         if not self.history_messages_key:
             historic_messages = config["configurable"]["message_history"].messages
             input_messages = input_messages[len(historic_messages) :]
 
-        # Get the output messages
+        # 获取输出消息
         output_val = load(run.outputs, allowed_objects="all")
         output_messages = self._get_output_messages(output_val)
         hist.add_messages(input_messages + output_messages)
@@ -555,16 +539,16 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
     async def _aexit_history(self, run: Run, config: RunnableConfig) -> None:
         hist: BaseChatMessageHistory = config["configurable"]["message_history"]
 
-        # Get the input messages
+        # 获取输入消息
         inputs = load(run.inputs, allowed_objects="all")
         input_messages = self._get_input_messages(inputs)
-        # If historic messages were prepended to the input messages, remove them to
-        # avoid adding duplicate messages to history.
+        # 如果历史消息被预先添加到输入消息中，请移除它们
+        # 以避免向历史记录添加重复消息
         if not self.history_messages_key:
             historic_messages = await hist.aget_messages()
             input_messages = input_messages[len(historic_messages) :]
 
-        # Get the output messages
+        # 获取输出消息
         output_val = load(run.outputs, allowed_objects="all")
         output_messages = self._get_output_messages(output_val)
         await hist.aadd_messages(input_messages + output_messages)
@@ -592,7 +576,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
 
         if len(expected_keys) == 1:
             if parameter_names:
-                # If arity = 1, then invoke function by positional arguments
+                # 如果arity = 1，则通过位置参数调用函数
                 message_history = self.get_session_history(
                     configurable[expected_keys[0]]
                 )
@@ -601,7 +585,7 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
                     config["configurable"] = {}
                 message_history = self.get_session_history()
         else:
-            # otherwise verify that names of keys patch and invoke by named arguments
+            # 否则验证键名是否匹配，并通过命名参数调用
             if set(expected_keys) != set(parameter_names):
                 msg = (
                     f"Expected keys {sorted(expected_keys)} do not match parameter "
@@ -617,6 +601,6 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
 
 
 def _get_parameter_names(callable_: GetSessionHistoryCallable) -> list[str]:
-    """Get the parameter names of the `Callable`."""
+    """获取 Callable 的参数名称。"""
     sig = inspect.signature(callable_)
     return list(sig.parameters.keys())

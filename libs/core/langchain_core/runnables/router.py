@@ -1,4 +1,4 @@
-"""`Runnable` that routes to a set of `Runnable` objects."""
+"""根据路由选择将输入路由到一组可运行单元（Runnable）的路由运行单元（RouterRunnable）。"""
 
 from __future__ import annotations
 
@@ -35,20 +35,20 @@ if TYPE_CHECKING:
 
 
 class RouterInput(TypedDict):
-    """Router input."""
+    """路由输入。"""
 
     key: str
-    """The key to route on."""
+    """要路由的键。"""
     input: Any
-    """The input to pass to the selected `Runnable`."""
+    """要传递给所选可运行单元（Runnable）的输入。"""
 
 
 class RouterRunnable(RunnableSerializable[RouterInput, Output]):
-    """`Runnable` that routes to a set of `Runnable` based on `Input['key']`.
+    """根据 `Input['key']` 将输入路由到一组可运行单元（Runnable）的路由运行单元。
 
-    Returns the output of the selected Runnable.
+    返回所选可运行单元的输出。
 
-    Example:
+    示例：
         ```python
         from langchain_core.runnables.router import RouterRunnable
         from langchain_core.runnables import RunnableLambda
@@ -74,10 +74,10 @@ class RouterRunnable(RunnableSerializable[RouterInput, Output]):
         self,
         runnables: Mapping[str, Runnable[Any, Output] | Callable[[Any], Output]],
     ) -> None:
-        """Create a `RouterRunnable`.
+        """创建 RouterRunnable。
 
-        Args:
-            runnables: A mapping of keys to `Runnable` objects.
+        参数：
+            runnables: 从键到可运行单元（Runnable）对象的映射。
         """
         super().__init__(
             runnables={key: coerce_to_runnable(r) for key, r in runnables.items()}
@@ -90,15 +90,15 @@ class RouterRunnable(RunnableSerializable[RouterInput, Output]):
     @classmethod
     @override
     def is_lc_serializable(cls) -> bool:
-        """Return `True` as this class is serializable."""
+        """返回 `True`，因为此类可序列化。"""
         return True
 
     @classmethod
     @override
     def get_lc_namespace(cls) -> list[str]:
-        """Get the namespace of the LangChain object.
+        """获取 LangChain 对象的命名空间。
 
-        Returns:
+        返回值：
             `["langchain", "schema", "runnable"]`
         """
         return ["langchain", "schema", "runnable"]

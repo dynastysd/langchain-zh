@@ -1,4 +1,4 @@
-"""`Runnable` that retries a `Runnable` if it fails."""
+"""失败时重试 Runnable 的 Runnable。"""
 
 from typing import (
     TYPE_CHECKING,
@@ -33,52 +33,50 @@ U = TypeVar("U")
 
 
 class ExponentialJitterParams(TypedDict, total=False):
-    """Parameters for `tenacity.wait_exponential_jitter`."""
+    """`tenacity.wait_exponential_jitter` 的参数。"""
 
     initial: float
-    """Initial wait."""
+    """初始等待时间。"""
     max: float
-    """Maximum wait."""
+    """最大等待时间。"""
     exp_base: float
-    """Base for exponential backoff."""
+    """指数退避的基数。"""
     jitter: float
-    """Random additional wait sampled from random.uniform(0, jitter)."""
+    """从 random.uniform(0, jitter) 中采样的随机额外等待时间。"""
 
 
 class RunnableRetry(RunnableBindingBase[Input, Output]):  # type: ignore[no-redef]
-    """Retry a Runnable if it fails.
+    """失败时重试 Runnable。
 
-    RunnableRetry can be used to add retry logic to any object
-    that subclasses the base Runnable.
+    RunnableRetry 可用于向任何子类化基础 Runnable 的对象添加重试逻辑。
 
-    Such retries are especially useful for network calls that may fail
-    due to transient errors.
+    这种重试对于可能因暂时性错误而失败的网络调用特别有用。
 
-    The RunnableRetry is implemented as a RunnableBinding. The easiest
-    way to use it is through the `.with_retry()` method on all Runnables.
+    RunnableRetry 实现为 RunnableBinding。最简单的方法是通过所有
+    Runnable 上的 `.with_retry()` 方法使用它。
 
-    Example:
-    Here's an example that uses a RunnableLambda to raise an exception
+    示例：
+    这是一个使用 RunnableLambda 抛出异常的示例
 
         ```python
         import time
 
 
         def foo(input) -> None:
-            '''Fake function that raises an exception.'''
-            raise ValueError(f"Invoking foo failed. At time {time.time()}")
+            '''抛出异常的假函数。'''
+            raise ValueError(f"调用 foo 失败。时间：{time.time()}")
 
 
         runnable = RunnableLambda(foo)
 
         runnable_with_retries = runnable.with_retry(
-            retry_if_exception_type=(ValueError,),  # Retry only on ValueError
-            wait_exponential_jitter=True,  # Add jitter to the exponential backoff
-            stop_after_attempt=2,  # Try twice
-            exponential_jitter_params={"initial": 2},  # if desired, customize backoff
+            retry_if_exception_type=(ValueError,),  # 只在 ValueError 上重试
+            wait_exponential_jitter=True,  # 向指数退避添加抖动
+            stop_after_attempt=2,  # 重试两次
+            exponential_jitter_params={"initial": 2},  # 如有需要，自定义退避
         )
 
-        # The method invocation above is equivalent to the longer form below:
+        # 上面的方法调用等价于下面的较长形式：
 
         runnable_with_retries = RunnableRetry(
             bound=runnable,
@@ -89,12 +87,11 @@ class RunnableRetry(RunnableBindingBase[Input, Output]):  # type: ignore[no-rede
         )
         ```
 
-    This logic can be used to retry any Runnable, including a chain of Runnables,
-    but in general it's best practice to keep the scope of the retry as small as
-    possible. For example, if you have a chain of Runnables, you should only retry
-    the Runnable that is likely to fail, not the entire chain.
+    此逻辑可用于重试任何 Runnable，包括 Runnable 链，但通常最好将
+    重试范围尽可能小。例如，如果你有一个 Runnable 链，你应该只重试
+    可能失败的 Runnable，而不是整个链。
 
-    Example:
+    示例：
         ```python
         from langchain_core.chat_models import ChatOpenAI
         from langchain_core.prompts import PromptTemplate
@@ -102,35 +99,34 @@ class RunnableRetry(RunnableBindingBase[Input, Output]):  # type: ignore[no-rede
         template = PromptTemplate.from_template("tell me a joke about {topic}.")
         model = ChatOpenAI(temperature=0.5)
 
-        # Good
+        # 好
         chain = template | model.with_retry()
 
-        # Bad
+        # 不好
         chain = template | model
         retryable_chain = chain.with_retry()
         ```
     """
 
     retry_exception_types: tuple[type[BaseException], ...] = (Exception,)
-    """The exception types to retry on. By default all exceptions are retried.
+    """要重试的异常类型。默认重试所有异常。
 
-    In general you should only retry on exceptions that are likely to be
-    transient, such as network errors.
+    通常你应该只重试可能是暂时性的异常，例如网络错误。
 
-    Good exceptions to retry are all server errors (5xx) and selected client
-    errors (4xx) such as 429 Too Many Requests.
+    适合重试的异常包括所有服务器错误（5xx）和选定的客户端
+    错误（4xx），如 429 请求过多。
     """
 
     wait_exponential_jitter: bool = True
-    """Whether to add jitter to the exponential backoff."""
+    """是否向指数退避添加抖动。"""
 
     exponential_jitter_params: ExponentialJitterParams | None = None
-    """Parameters for `tenacity.wait_exponential_jitter`. Namely: `initial`,
-    `max`, `exp_base`, and `jitter` (all `float` values).
+    """`tenacity.wait_exponential_jitter` 的参数。即：`initial`、
+    `max`、`exp_base` 和 `jitter`（都是 `float` 值）。
     """
 
     max_attempt_number: int = 3
-    """The maximum number of attempts to retry the Runnable."""
+    """重试 Runnable 的最大尝试次数。"""
 
     @property
     def _kwargs_retrying(self) -> dict[str, Any]:
@@ -375,5 +371,4 @@ class RunnableRetry(RunnableBindingBase[Input, Output]):  # type: ignore[no-rede
             self._abatch, inputs, config, return_exceptions=return_exceptions, **kwargs
         )
 
-    # stream() and transform() are not retried because retrying a stream
-    # is not very intuitive.
+    # stream() 和 transform() 不会被重试，因为重试流式输出不太直观。

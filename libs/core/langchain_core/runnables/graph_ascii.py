@@ -1,6 +1,6 @@
-"""Draws DAG in ASCII.
+"""使用 ASCII 字符绘制有向无环图（DAG）。
 
-Adapted from https://github.com/iterative/dvc/blob/main/dvc/dagascii.py.
+改编自 https://github.com/iterative/dvc/blob/main/dvc/dagascii.py。
 """
 
 from __future__ import annotations
@@ -25,49 +25,48 @@ if TYPE_CHECKING:
 
 
 class VertexViewer:
-    """VertexViewer class.
+    """顶点查看器类。
 
-    Class to define vertex box boundaries that will be accounted for during
-    graph building by grandalf.
+    用于定义顶点的边界框，在 grandalf 构建图时会被考虑。
     """
 
-    HEIGHT = 3  # top and bottom box edges + text
-    """Height of the box."""
+    HEIGHT = 3  # 顶部和底部边框 + 文本
+    """边界框的高度。"""
 
     def __init__(self, name: str) -> None:
-        """Create a VertexViewer.
+        """创建顶点查看器。
 
         Args:
-            name: name of the vertex.
+            name: 顶点的名称。
         """
-        self._h = self.HEIGHT  # top and bottom box edges + text
-        self._w = len(name) + 2  # right and left bottom edges + text
+        self._h = self.HEIGHT  # 顶部和底部边框 + 文本
+        self._w = len(name) + 2  # 左右边框 + 文本
 
     @property
     def h(self) -> int:
-        """Height of the box."""
+        """边界框的高度。"""
         return self._h
 
     @property
     def w(self) -> int:
-        """Width of the box."""
+        """边界框的宽度。"""
         return self._w
 
 
 class AsciiCanvas:
-    """Class for drawing in ASCII."""
+    """用于 ASCII 绘图的画布类。"""
 
     TIMEOUT = 10
 
     def __init__(self, cols: int, lines: int) -> None:
-        """Create an ASCII canvas.
+        """创建 ASCII 画布。
 
         Args:
-            cols: number of columns in the canvas. Should be `> 1`.
-            lines: number of lines in the canvas. Should be `> 1`.
+            cols: 画布的列数。应该大于 1。
+            lines: 画布的行数。应该大于 1。
 
         Raises:
-            ValueError: if canvas dimensions are invalid.
+            ValueError: 如果画布尺寸无效。
         """
         if cols <= 1 or lines <= 1:
             msg = "Canvas dimensions should be > 1"
@@ -79,28 +78,24 @@ class AsciiCanvas:
         self.canvas = [[" "] * cols for line in range(lines)]
 
     def draw(self) -> str:
-        """Draws ASCII canvas on the screen.
+        """在屏幕上绘制 ASCII 画布。
 
         Returns:
-            The ASCII canvas string.
+            ASCII 画布字符串。
         """
         lines = map("".join, self.canvas)
         return os.linesep.join(lines)
 
     def point(self, x: int, y: int, char: str) -> None:
-        """Create a point on ASCII canvas.
+        """在 ASCII 画布上创建一个点。
 
         Args:
-            x: x coordinate. Should be `>= 0` and `<` number of columns in
-                the canvas.
-            y: y coordinate. Should be `>= 0` an `<` number of lines in the
-                canvas.
-            char: character to place in the specified point on the
-                canvas.
+            x: x 坐标。应该 >= 0 且 < 画布的列数。
+            y: y 坐标。应该 >= 0 且 < 画布的行数。
+            char: 要放置在指定位置的字符。
 
         Raises:
-            ValueError: if char is not a single character or if
-                coordinates are out of bounds.
+            ValueError: 如果 char 不是单个字符或坐标超出范围。
         """
         if len(char) != 1:
             msg = "char should be a single character"
@@ -115,14 +110,14 @@ class AsciiCanvas:
         self.canvas[y][x] = char
 
     def line(self, x0: int, y0: int, x1: int, y1: int, char: str) -> None:
-        """Create a line on ASCII canvas.
+        """在 ASCII 画布上创建一条线。
 
         Args:
-            x0: x coordinate where the line should start.
-            y0: y coordinate where the line should start.
-            x1: x coordinate where the line should end.
-            y1: y coordinate where the line should end.
-            char: character to draw the line with.
+            x0: 线条起点的 x 坐标。
+            y0: 线条起点的 y 坐标。
+            x1: 线条终点的 x 坐标。
+            y1: 线条终点的 y 坐标。
+            char: 用于绘制线条的字符。
         """
         if x0 > x1:
             x1, x0 = x0, x1
@@ -147,27 +142,27 @@ class AsciiCanvas:
                 self.point(x, y, char)
 
     def text(self, x: int, y: int, text: str) -> None:
-        """Print a text on ASCII canvas.
+        """在 ASCII 画布上打印文本。
 
         Args:
-            x: x coordinate where the text should start.
-            y: y coordinate where the text should start.
-            text: string that should be printed.
+            x: 文本起始位置的 x 坐标。
+            y: 文本起始位置的 y 坐标。
+            text: 要打印的字符串。
         """
         for i, char in enumerate(text):
             self.point(x + i, y, char)
 
     def box(self, x0: int, y0: int, width: int, height: int) -> None:
-        """Create a box on ASCII canvas.
+        """在 ASCII 画布上创建一个边框。
 
         Args:
-            x0: x coordinate of the box corner.
-            y0: y coordinate of the box corner.
-            width: box width.
-            height: box height.
+            x0: 边框角落的 x 坐标。
+            y0: 边框角落的 y 坐标。
+            width: 边框宽度。
+            height: 边框高度。
 
         Raises:
-            ValueError: if box dimensions are invalid.
+            ValueError: 如果边框尺寸无效。
         """
         if width <= 1 or height <= 1:
             msg = "Box dimensions should be > 1"
@@ -201,12 +196,21 @@ class _EdgeViewer:
 def _build_sugiyama_layout(
     vertices: Mapping[str, str], edges: Sequence[LangEdge]
 ) -> Any:
+    """构建杉山布局（Sugiyama layout）。
+
+    Args:
+        vertices: 图中的顶点列表。
+        edges: 图中的边列表。
+
+    Returns:
+        杉山布局对象。
+    """
     if not _HAS_GRANDALF:
-        msg = "Install grandalf to draw graphs: `pip install grandalf`."
+        msg = "安装 grandalf 以绘制图：`pip install grandalf`。"
         raise ImportError(msg)
 
     #
-    # Just a reminder about naming conventions:
+    # 坐标命名约定的提醒：
     # +------------X
     # |
     # |
@@ -223,7 +227,7 @@ def _build_sugiyama_layout(
     for vertex in vertices_list:
         vertex.view = VertexViewer(vertex.data)
 
-    # NOTE: determine min box length to create the best layout
+    # 注意：确定最小边界框长度以创建最佳布局
     minw = min(v.view.w for v in vertices_list)
 
     for edge in edges_:
@@ -245,20 +249,19 @@ def _build_sugiyama_layout(
 
 
 def draw_ascii(vertices: Mapping[str, str], edges: Sequence[LangEdge]) -> str:
-    """Build a DAG and draw it in ASCII.
+    """构建有向无环图（DAG）并使用 ASCII 字符绘制。
 
     Args:
-        vertices: list of graph vertices.
-        edges: list of graph edges.
+        vertices: 图中的顶点列表。
+        edges: 图中的边列表。
 
     Raises:
-        ValueError: if the canvas dimensions are invalid or if
-            edge coordinates are invalid.
+        ValueError: 如果画布尺寸无效或边坐标无效。
 
     Returns:
-        ASCII representation
+        ASCII 表示形式
 
-    Example:
+    示例:
         ```python
         from langchain_core.runnables.graph_ascii import draw_ascii
 
@@ -280,26 +283,26 @@ def draw_ascii(vertices: Mapping[str, str], edges: Sequence[LangEdge]) -> str:
                  *    *
                 *     *
                *       *
-            +---+       *
-            | 2 |       *
-            +---+**     *
-              *    **   *
-              *      ** *
-              *        **
-            +---+     +---+
-            | 3 |     | 4 |
-            +---+     +---+
+           +---+       *
+           | 2 |       *
+           +---+**     *
+             *    **   *
+             *      ** *
+             *        **
+           +---+     +---+
+           | 3 |     | 4 |
+           +---+     +---+
         ```
     """
-    # NOTE: coordinates might me negative, so we need to shift
-    # everything to the positive plane before we actually draw it.
+    # 注意：坐标可能是负数，因此需要在绘制前
+    # 将所有内容平移到正平面。
     xlist: list[float] = []
     ylist: list[float] = []
 
     sug = _build_sugiyama_layout(vertices, edges)
 
     for vertex in sug.g.sV:
-        # NOTE: moving boxes w/2 to the left
+        # 注意：将边界框向左移动 w/2
         xlist.extend(
             (
                 vertex.view.xy[0] - vertex.view.w / 2.0,
@@ -323,10 +326,10 @@ def draw_ascii(vertices: Mapping[str, str], edges: Sequence[LangEdge]) -> str:
 
     canvas = AsciiCanvas(canvas_cols, canvas_lines)
 
-    # NOTE: first draw edges so that node boxes could overwrite them
+    # 注意：先绘制边，这样节点边界框可以覆盖它们
     for edge in sug.g.sE:
         if len(edge.view.pts) <= 1:
-            msg = "Not enough points to draw an edge"
+            msg = "没有足够的点来绘制边"
             raise ValueError(msg)
         for index in range(1, len(edge.view.pts)):
             start = edge.view.pts[index - 1]
@@ -339,7 +342,7 @@ def draw_ascii(vertices: Mapping[str, str], edges: Sequence[LangEdge]) -> str:
 
             if start_x < 0 or start_y < 0 or end_x < 0 or end_y < 0:
                 msg = (
-                    "Invalid edge coordinates: "
+                    "无效的边坐标："
                     f"start_x={start_x}, "
                     f"start_y={start_y}, "
                     f"end_x={end_x}, "
@@ -350,7 +353,7 @@ def draw_ascii(vertices: Mapping[str, str], edges: Sequence[LangEdge]) -> str:
             canvas.line(start_x, start_y, end_x, end_y, "." if edge.data else "*")
 
     for vertex in sug.g.sV:
-        # NOTE: moving boxes w/2 to the left
+        # 注意：将边界框向左移动 w/2
         x = vertex.view.xy[0] - vertex.view.w / 2.0
         y = vertex.view.xy[1]
 

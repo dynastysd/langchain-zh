@@ -1,4 +1,4 @@
-"""`Runnable` that can fallback to other `Runnable` objects if it fails."""
+"""当失败时可以降级到其他 Runnable 对象的 Runnable。"""
 
 import asyncio
 import inspect
@@ -34,22 +34,20 @@ if TYPE_CHECKING:
 
 
 class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
-    """`Runnable` that can fallback to other `Runnable` objects if it fails.
+    """当失败时可以降级到其他 Runnable 对象的 Runnable。
 
-    External APIs (e.g., APIs for a language model) may at times experience
-    degraded performance or even downtime.
+    外部 API（例如语言模型的 API）有时可能会出现性能下降甚至停机。
 
-    In these cases, it can be useful to have a fallback `Runnable` that can be
-    used in place of the original `Runnable` (e.g., fallback to another LLM provider).
+    在这些情况下，有一个降级 Runnable 会很有用，它可以用来替代原始
+    Runnable（例如降级到另一个 LLM 提供者）。
 
-    Fallbacks can be defined at the level of a single `Runnable`, or at the level
-    of a chain of `Runnable`s. Fallbacks are tried in order until one succeeds or
-    all fail.
+    降级可以在单个 Runnable 级别或 Runnable 链的级别定义。降级按顺序尝试，
+    直到一个成功或全部失败。
 
-    While you can instantiate a `RunnableWithFallbacks` directly, it is usually
-    more convenient to use the `with_fallbacks` method on a `Runnable`.
+    虽然你可以直接实例化 `RunnableWithFallbacks`，但通常更方便的是在
+    Runnable 上使用 `with_fallbacks` 方法。
 
-    Example:
+    示例：
         ```python
         from langchain_core.chat_models.openai import ChatOpenAI
         from langchain_core.chat_models.anthropic import ChatAnthropic
@@ -57,13 +55,12 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
         model = ChatAnthropic(model="claude-sonnet-4-6").with_fallbacks(
             [ChatOpenAI(model="gpt-5.4-mini")]
         )
-        # Will usually use ChatAnthropic, but fallback to ChatOpenAI
-        # if ChatAnthropic fails.
+        # 通常使用 ChatAnthropic，但如果 ChatAnthropic 失败，
+        # 则降级到 ChatOpenAI。
         model.invoke("hello")
 
-        # And you can also use fallbacks at the level of a chain.
-        # Here if both LLM providers fail, we'll fallback to a good hardcoded
-        # response.
+        # 也可以在链的级别使用降级。
+        # 如果两个 LLM 提供者都失败，我们将降级到一个好的硬编码响应。
 
         from langchain_core.prompts import PromptTemplate
         from langchain_core.output_parser import StrOutputParser
@@ -86,21 +83,21 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
     """
 
     runnable: Runnable[Input, Output]
-    """The `Runnable` to run first."""
+    """首先运行的 Runnable。"""
     fallbacks: Sequence[Runnable[Input, Output]]
-    """A sequence of fallbacks to try."""
+    """要尝试的降级序列。"""
     exceptions_to_handle: tuple[type[BaseException], ...] = (Exception,)
-    """The exceptions on which fallbacks should be tried.
+    """应该尝试降级的异常类型。
 
-    Any exception that is not a subclass of these exceptions will be raised immediately.
+    任何不是这些异常子类的异常都会立即重新抛出。
     """
     exception_key: str | None = None
-    """If `string` is specified then handled exceptions will be passed to fallbacks as
-    part of the input under the specified key.
+    """如果指定了字符串，则将处理的异常作为输入
+    的一部分传递给降级，放在指定的键下。
 
-    If `None`, exceptions will not be passed to fallbacks.
+    如果为 `None`，异常不会传递给降级。
 
-    If used, the base `Runnable` and its fallbacks must accept a dictionary as input.
+    如果使用，基础 Runnable 及其降级必须接受字典作为输入。
     """
 
     model_config = ConfigDict(
@@ -139,25 +136,25 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
     @classmethod
     @override
     def is_lc_serializable(cls) -> bool:
-        """Return `True` as this class is serializable."""
+        """返回 `True`，因为此类是可序列化的。"""
         return True
 
     @classmethod
     @override
     def get_lc_namespace(cls) -> list[str]:
-        """Get the namespace of the LangChain object.
+        """获取 LangChain 对象的命名空间。
 
-        Returns:
+        返回:
             `["langchain", "schema", "runnable"]`
         """
         return ["langchain", "schema", "runnable"]
 
     @property
     def runnables(self) -> Iterator[Runnable[Input, Output]]:
-        """Iterator over the `Runnable` and its fallbacks.
+        """Runnable 及其降级的迭代器。
 
-        Yields:
-            The `Runnable` then its fallbacks.
+        产出:
+            Runnable 及其降级。
         """
         yield self.runnable
         yield from self.fallbacks
@@ -172,10 +169,10 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
                 f"However found a type of {type(input)} for input"
             )
             raise ValueError(msg)
-        # setup callbacks
+        # 设置回调
         config = ensure_config(config)
         callback_manager = get_callback_manager_for_config(config)
-        # start the root run
+        # 启动根运行
         run_manager = callback_manager.on_chain_start(
             None,
             input,
@@ -225,10 +222,10 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
                 f"However found a type of {type(input)} for input"
             )
             raise ValueError(msg)
-        # setup callbacks
+        # 设置回调
         config = ensure_config(config)
         callback_manager = get_async_callback_manager_for_config(config)
-        # start the root run
+        # 启动根运行
         run_manager = await callback_manager.on_chain_start(
             None,
             input,
@@ -283,7 +280,7 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
         if not inputs:
             return []
 
-        # setup callbacks
+        # 设置回调
         configs = get_config_list(config, len(inputs))
         callback_managers = [
             CallbackManager.configure(
@@ -297,7 +294,7 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
             )
             for config in configs
         ]
-        # start the root runs, one per input
+        # 启动根运行，每个输入一个
         run_managers = [
             cm.on_chain_start(
                 None,
@@ -379,7 +376,7 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
         if not inputs:
             return []
 
-        # setup callbacks
+        # 设置回调
         configs = get_config_list(config, len(inputs))
         callback_managers = [
             AsyncCallbackManager.configure(
@@ -393,7 +390,7 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
             )
             for config in configs
         ]
-        # start the root runs, one per input
+        # 启动根运行，每个输入一个
         run_managers: list[AsyncCallbackManagerForChainRun] = await asyncio.gather(
             *(
                 cm.on_chain_start(
@@ -416,7 +413,7 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
             outputs = await runnable.abatch(
                 [input_ for _, input_ in sorted(run_again.items())],
                 [
-                    # each step a child run of the corresponding root run
+                    # 每个步骤是对应根运行的子运行
                     patch_config(configs[i], callbacks=run_managers[i].get_child())
                     for i in sorted(run_again)
                 ],
@@ -475,10 +472,10 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
                 f"However found a type of {type(input)} for input"
             )
             raise ValueError(msg)
-        # setup callbacks
+        # 设置回调
         config = ensure_config(config)
         callback_manager = get_callback_manager_for_config(config)
-        # start the root run
+        # 启动根运行
         run_manager = callback_manager.on_chain_start(
             None,
             input,
@@ -539,10 +536,10 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
                 f"However found a type of {type(input)} for input"
             )
             raise ValueError(msg)
-        # setup callbacks
+        # 设置回调
         config = ensure_config(config)
         callback_manager = get_async_callback_manager_for_config(config)
-        # start the root run
+        # 启动根运行
         run_manager = await callback_manager.on_chain_start(
             None,
             input,
@@ -591,16 +588,16 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
         await run_manager.on_chain_end(output)
 
     def __getattr__(self, name: str) -> Any:
-        """Get an attribute from the wrapped `Runnable` and its fallbacks.
+        """从包装的 Runnable 及其降级中获取属性。
 
-        Returns:
-            If the attribute is anything other than a method that outputs a `Runnable`,
-            returns `getattr(self.runnable, name)`. If the attribute is a method that
-            does return a new `Runnable` (e.g. `model.bind_tools([...])` outputs a new
-            `RunnableBinding`) then `self.runnable` and each of the runnables in
-            `self.fallbacks` is replaced with `getattr(x, name)`.
+        返回:
+            如果属性不是输出 Runnable 的方法，则返回
+            `getattr(self.runnable, name)`。如果属性是返回新
+            Runnable 的方法（例如 `model.bind_tools([...])` 输出新的
+            `RunnableBinding`），则 `self.runnable` 和 `self.fallbacks`
+            中的每个 runnable 都会被替换为 `getattr(x, name)`。
 
-        Example:
+        示例：
             ```python
             from langchain_openai import ChatOpenAI
             from langchain_anthropic import ChatAnthropic
@@ -612,8 +609,8 @@ class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
             model.model_name
             # -> "gpt-4o"
 
-            # .bind_tools() is called on both ChatOpenAI and ChatAnthropic
-            # Equivalent to:
+            # .bind_tools() 会在 ChatOpenAI 和 ChatAnthropic 上调用
+            # 等价于：
             # gpt_4o.bind_tools([...]).with_fallbacks([claude_3_sonnet.bind_tools([...])])
             model.bind_tools([...])
             # -> RunnableWithFallbacks(

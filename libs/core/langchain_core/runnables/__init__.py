@@ -1,21 +1,27 @@
-"""LangChain **Runnable** and the **LangChain Expression Language (LCEL)**.
+"""LangChain **可运行单元（Runnable）** 和 **LangChain 表达式语言（LCEL）**。
 
-The LangChain Expression Language (LCEL) offers a declarative method to build
-production-grade programs that harness the power of LLMs.
+LangChain 表达式语言（LCEL）提供了一种声明式方法来构建利用 LLM 能力的生产级程序。
 
-Programs created using LCEL and LangChain `Runnable` objects inherently support
-synchronous asynchronous, batch, and streaming operations.
+使用 LCEL 和 LangChain `Runnable` 对象创建的程序天生支持同步、异步、批量和流式操作。
 
-Support for **async** allows servers hosting LCEL based programs to scale bette for
-higher concurrent loads.
+**异步（Async）** 支持使托管基于 LCEL 的程序的服务器能够更好地扩展，以处理更高的并发负载。
 
-**Batch** operations allow for processing multiple inputs in parallel.
+**批量（Batch）** 操作允许并行处理多个输入。
 
-**Streaming** of intermediate outputs, as they're being generated, allows for creating
-more responsive UX.
+**流式（Streaming）** 操作可以在生成时流式输出中间结果，从而创建更具响应性的用户体验。
 
-This module contains schema and implementation of LangChain `Runnable` object
-primitives.
+本模块包含 LangChain `Runnable` 对象原语的模式定义和实现。
+
+---
+
+主要导出：
+- Runnable：可运行单元基类
+- RunnableSequence：顺序链
+- RunnableParallel：并行链
+- RunnableBranch：分支链
+- RunnablePassthrough：直通链
+- RunnableWithFallbacks：降级链
+- RunnableWithMessageHistory：消息历史链
 """
 
 from typing import TYPE_CHECKING

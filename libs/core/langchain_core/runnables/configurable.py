@@ -1,4 +1,4 @@
-"""`Runnable` objects that can be dynamically configured."""
+"""可动态配置的可运行单元（Runnable）对象。"""
 
 from __future__ import annotations
 
@@ -47,17 +47,17 @@ if TYPE_CHECKING:
 
 
 class DynamicRunnable(RunnableSerializable[Input, Output]):
-    """Serializable `Runnable` that can be dynamically configured.
+    """可动态配置的可序列化可运行单元（Runnable）。
 
-    A `DynamicRunnable` should be initiated using the `configurable_fields` or
-    `configurable_alternatives` method of a `Runnable`.
+    DynamicRunnable 应通过 Runnable 的 `configurable_fields` 或
+    `configurable_alternatives` 方法来创建。
     """
 
     default: RunnableSerializable[Input, Output]
-    """The default `Runnable` to use."""
+    """默认使用的可运行单元（Runnable）。"""
 
     config: RunnableConfig | None = None
-    """The configuration to use."""
+    """要使用的配置。"""
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -66,15 +66,15 @@ class DynamicRunnable(RunnableSerializable[Input, Output]):
     @classmethod
     @override
     def is_lc_serializable(cls) -> bool:
-        """Return `True` as this class is serializable."""
+        """返回 `True`，因为此类可序列化。"""
         return True
 
     @classmethod
     @override
     def get_lc_namespace(cls) -> list[str]:
-        """Get the namespace of the LangChain object.
+        """获取 LangChain 对象的命名空间。
 
-        Returns:
+        返回值：
             `["langchain", "schema", "runnable"]`
         """
         return ["langchain", "schema", "runnable"]
@@ -120,13 +120,13 @@ class DynamicRunnable(RunnableSerializable[Input, Output]):
     def prepare(
         self, config: RunnableConfig | None = None
     ) -> tuple[Runnable[Input, Output], RunnableConfig]:
-        """Prepare the `Runnable` for invocation.
+        """准备用于调用的可运行单元（Runnable）。
 
-        Args:
-            config: The configuration to use.
+        参数：
+            config: 要使用的配置。
 
-        Returns:
-            The prepared `Runnable` and configuration.
+        返回值：
+            准备好的可运行单元（Runnable）和配置。
         """
         runnable: Runnable[Input, Output] = self
         while isinstance(runnable, DynamicRunnable):
@@ -188,7 +188,7 @@ class DynamicRunnable(RunnableSerializable[Input, Output]):
             else:
                 return bound.invoke(input_, config, **kwargs)
 
-        # If there's only one input, don't bother with the executor
+        # 如果只有一个输入，则无需使用执行器
         if len(inputs) == 1:
             return cast("list[Output]", [invoke(prepared[0], inputs[0])])
 
@@ -316,12 +316,12 @@ class DynamicRunnable(RunnableSerializable[Input, Output]):
 
 
 class RunnableConfigurableFields(DynamicRunnable[Input, Output]):
-    """`Runnable` that can be dynamically configured.
+    """可动态配置的可运行单元（Runnable）。
 
-    A `RunnableConfigurableFields` should be initiated using the
-    `configurable_fields` method of a `Runnable`.
+    RunnableConfigurableFields 应通过 Runnable 的
+    `configurable_fields` 方法来创建。
 
-    Here is an example of using a `RunnableConfigurableFields` with LLMs:
+    以下是结合 LLM 使用 RunnableConfigurableFields 的示例：
 
         ```python
         from langchain_core.prompts import PromptTemplate
@@ -335,11 +335,10 @@ class RunnableConfigurableFields(DynamicRunnable[Input, Output]):
                 description="The temperature of the LLM",
             )
         )
-        # This creates a RunnableConfigurableFields for a chat model.
+        # 这为聊天模型创建了一个 RunnableConfigurableFields。
 
-        # When invoking the created RunnableSequence, you can pass in the
-        # value for your ConfigurableField's id which in this case
-        # will be change in temperature
+        # 当调用所创建的 RunnableSequence 时，可以传入
+        # ConfigurableField 的 id 值，这里会改变 temperature
 
         prompt = PromptTemplate.from_template("Pick a random number above {x}")
         chain = prompt | model
@@ -348,7 +347,7 @@ class RunnableConfigurableFields(DynamicRunnable[Input, Output]):
         chain.invoke({"x": 0}, config={"configurable": {"temperature": 0.9}})
         ```
 
-    Here is an example of using a `RunnableConfigurableFields` with `HubRunnables`:
+    以下是结合 HubRunnables 使用 RunnableConfigurableFields 的示例：
 
         ```python
         from langchain_core.prompts import PromptTemplate
@@ -366,7 +365,7 @@ class RunnableConfigurableFields(DynamicRunnable[Input, Output]):
 
         prompt.invoke({"question": "foo", "context": "bar"})
 
-        # Invoking prompt with `with_config` method
+        # 使用 `with_config` 方法调用 prompt
 
         prompt.invoke(
             {"question": "foo", "context": "bar"},
@@ -376,14 +375,14 @@ class RunnableConfigurableFields(DynamicRunnable[Input, Output]):
     """
 
     fields: dict[str, AnyConfigurableField]
-    """The configurable fields to use."""
+    """要使用的可配置字段。"""
 
     @property
     def config_specs(self) -> list[ConfigurableFieldSpec]:
-        """Get the configuration specs for the `RunnableConfigurableFields`.
+        """获取 RunnableConfigurableFields 的配置规范。
 
-        Returns:
-            The configuration specs.
+        返回值：
+            配置规范列表。
         """
         config_specs = []
 
@@ -459,9 +458,9 @@ class RunnableConfigurableFields(DynamicRunnable[Input, Output]):
         return (self.default, config)
 
 
-# Before Python 3.11 native StrEnum is not available
+# Python 3.11 之前原生 StrEnum 不可用
 class StrEnum(str, enum.Enum):
-    """String enum."""
+    """字符串枚举。"""
 
 
 _enums_for_spec: WeakValueDictionary[
@@ -473,21 +472,20 @@ _enums_for_spec_lock = threading.Lock()
 
 
 class RunnableConfigurableAlternatives(DynamicRunnable[Input, Output]):
-    """`Runnable` that can be dynamically configured.
+    """可动态配置的可运行单元（Runnable）。
 
-    A `RunnableConfigurableAlternatives` should be initiated using the
-    `configurable_alternatives` method of a `Runnable` or can be
-    initiated directly as well.
+    RunnableConfigurableAlternatives 应通过 Runnable 的
+    `configurable_alternatives` 方法来创建，也可以直接实例化。
 
-    Here is an example of using a `RunnableConfigurableAlternatives` that uses
-    alternative prompts to illustrate its functionality:
+    以下是一个使用替代提示（alternative prompts）来说明其功能的
+    RunnableConfigurableAlternatives 示例：
 
         ```python
         from langchain_core.runnables import ConfigurableField
         from langchain_openai import ChatOpenAI
 
-        # This creates a RunnableConfigurableAlternatives for Prompt Runnable
-        # with two alternatives.
+        # 这为提示词可运行单元（Prompt Runnable）创建了一个
+        # RunnableConfigurableAlternatives，包含两个替代选项。
         prompt = PromptTemplate.from_template(
             "Tell me a joke about {topic}"
         ).configurable_alternatives(
@@ -496,18 +494,17 @@ class RunnableConfigurableAlternatives(DynamicRunnable[Input, Output]):
             poem=PromptTemplate.from_template("Write a short poem about {topic}"),
         )
 
-        # When invoking the created RunnableSequence, you can pass in the
-        # value for your ConfigurableField's id which in this case will either be
-        # `joke` or `poem`.
+        # 当调用所创建的 RunnableSequence 时，可以传入
+        # ConfigurableField 的 id 值，这里可以是 `joke` 或 `poem`。
         chain = prompt | ChatOpenAI(model="gpt-5.4-mini")
 
-        # The `with_config` method brings in the desired Prompt Runnable in your
-        # Runnable Sequence.
+        # `with_config` 方法可以将所需的提示词可运行单元
+        # 添加到你的 Runnable Sequence 中。
         chain.with_config(configurable={"prompt": "poem"}).invoke({"topic": "bears"})
         ```
 
-    Equivalently, you can initialize `RunnableConfigurableAlternatives` directly
-    and use in LCEL in the same way:
+    同样，你也可以直接实例化 RunnableConfigurableAlternatives，
+    并以相同的方式在 LCEL 中使用：
 
         ```python
         from langchain_core.runnables import ConfigurableField
@@ -531,21 +528,21 @@ class RunnableConfigurableAlternatives(DynamicRunnable[Input, Output]):
     """
 
     which: ConfigurableField
-    """The `ConfigurableField` to use to choose between alternatives."""
+    """用于在替代选项之间进行选择的 ConfigurableField。"""
 
     alternatives: dict[
         str,
         Runnable[Input, Output] | Callable[[], Runnable[Input, Output]],
     ]
-    """The alternatives to choose from."""
+    """可选择的替代选项字典。"""
 
     default_key: str = "default"
-    """The enum value to use for the default option."""
+    """默认选项使用的枚举值。"""
 
     prefix_keys: bool
-    """Whether to prefix configurable fields of each alternative with a namespace
-    of the form <which.id>==<alternative_key>, e.g. a key named "temperature" used by
-    the alternative named "gpt3" becomes "model==gpt3/temperature".
+    """是否为每个替代选项的可配置字段添加命名空间前缀，
+    格式为 <which.id>==<alternative_key>，例如：名为 "gpt3" 的替代选项使用的
+    名为 "temperature" 的键会变成 "model==gpt3/temperature"。
     """
 
     @property
@@ -564,7 +561,7 @@ class RunnableConfigurableAlternatives(DynamicRunnable[Input, Output]):
                 )
                 _enums_for_spec[self.which] = cast("type[StrEnum]", which_enum)
         return get_unique_config_specs(
-            # which alternative
+            # 选择哪个替代选项
             [
                 ConfigurableFieldSpec(
                     id=self.which.id,
@@ -575,7 +572,7 @@ class RunnableConfigurableAlternatives(DynamicRunnable[Input, Output]):
                     is_shared=self.which.is_shared,
                 ),
             ]
-            # config specs of the default option
+            # 默认选项的配置规范
             + (
                 [
                     prefix_config_spec(s, f"{self.which.id}=={self.default_key}")
@@ -584,7 +581,7 @@ class RunnableConfigurableAlternatives(DynamicRunnable[Input, Output]):
                 if self.prefix_keys
                 else self.default.config_specs
             )
-            # config specs of the alternatives
+            # 替代选项的配置规范
             + [
                 (
                     prefix_config_spec(s, f"{self.which.id}=={alt_key}")
@@ -614,7 +611,7 @@ class RunnableConfigurableAlternatives(DynamicRunnable[Input, Output]):
     ) -> tuple[Runnable[Input, Output], RunnableConfig]:
         config = ensure_config(config)
         which = config.get("configurable", {}).get(self.which.id, self.default_key)
-        # remap configurable keys for the chosen alternative
+        # 为所选替代选项重新映射可配置键
         if self.prefix_keys:
             config = cast(
                 "RunnableConfig",
@@ -626,7 +623,7 @@ class RunnableConfigurableAlternatives(DynamicRunnable[Input, Output]):
                     },
                 },
             )
-        # return the chosen alternative
+        # 返回所选替代选项
         if which == self.default_key:
             return (self.default, config)
         if which in self.alternatives:
@@ -639,24 +636,24 @@ class RunnableConfigurableAlternatives(DynamicRunnable[Input, Output]):
 
 
 def _strremoveprefix(s: str, prefix: str) -> str:
-    """`str.removeprefix()` is only available in Python 3.9+."""
+    """`str.removeprefix()` 仅在 Python 3.9+ 可用。"""
     return s.replace(prefix, "", 1) if s.startswith(prefix) else s
 
 
 def prefix_config_spec(
     spec: ConfigurableFieldSpec, prefix: str
 ) -> ConfigurableFieldSpec:
-    """Prefix the id of a `ConfigurableFieldSpec`.
+    """为 ConfigurableFieldSpec 的 id 添加前缀。
 
-    This is useful when a `RunnableConfigurableAlternatives` is used as a
-    `ConfigurableField` of another `RunnableConfigurableAlternatives`.
+    当一个 RunnableConfigurableAlternatives 用作另一个
+    RunnableConfigurableAlternatives 的 ConfigurableField 时，此功能很有用。
 
-    Args:
-        spec: The `ConfigurableFieldSpec` to prefix.
-        prefix: The prefix to add.
+    参数：
+        spec: 要添加前缀的 ConfigurableFieldSpec。
+        prefix: 要添加的前缀。
 
-    Returns:
-        The prefixed `ConfigurableFieldSpec`.
+    返回值：
+        添加前缀后的 ConfigurableFieldSpec。
     """
     return (
         ConfigurableFieldSpec(
@@ -676,17 +673,17 @@ def make_options_spec(
     spec: ConfigurableFieldSingleOption | ConfigurableFieldMultiOption,
     description: str | None,
 ) -> ConfigurableFieldSpec:
-    """Make options spec.
+    """创建选项规范。
 
-    Make a `ConfigurableFieldSpec` for a `ConfigurableFieldSingleOption` or
-    `ConfigurableFieldMultiOption`.
+    为 ConfigurableFieldSingleOption 或 ConfigurableFieldMultiOption
+    创建一个 ConfigurableFieldSpec。
 
-    Args:
-        spec: The `ConfigurableFieldSingleOption` or `ConfigurableFieldMultiOption`.
-        description: The description to use if the spec does not have one.
+    参数：
+        spec: ConfigurableFieldSingleOption 或 ConfigurableFieldMultiOption。
+        description: 如果规范没有描述，则使用此描述。
 
-    Returns:
-        The `ConfigurableFieldSpec`.
+    返回值：
+        ConfigurableFieldSpec。
     """
     with _enums_for_spec_lock:
         if enum := _enums_for_spec.get(spec):

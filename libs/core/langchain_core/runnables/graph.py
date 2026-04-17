@@ -1,4 +1,4 @@
-"""Graph used in `Runnable` objects."""
+"""用于 `Runnable` 对象的图。"""
 
 from __future__ import annotations
 
@@ -29,29 +29,29 @@ if TYPE_CHECKING:
 
 
 class Stringifiable(Protocol):
-    """Protocol for objects that can be converted to a string."""
+    """可转换为字符串的对象的协议。"""
 
     def __str__(self) -> str:
-        """Convert the object to a string."""
+        """将对象转换为字符串。"""
 
 
 class LabelsDict(TypedDict):
-    """Dictionary of labels for nodes and edges in a graph."""
+    """图中节点和边的标签字典。"""
 
     nodes: dict[str, str]
-    """Labels for nodes."""
+    """节点的标签。"""
     edges: dict[str, str]
-    """Labels for edges."""
+    """边的标签。"""
 
 
 def is_uuid(value: str) -> bool:
-    """Check if a string is a valid UUID.
+    """检查字符串是否为有效的 UUID。
 
     Args:
-        value: The string to check.
+        value: 要检查的字符串。
 
     Returns:
-        `True` if the string is a valid UUID, `False` otherwise.
+        如果字符串是有效的 UUID，则为 `True`，否则为 `False`。
     """
     try:
         UUID(value)
@@ -61,26 +61,26 @@ def is_uuid(value: str) -> bool:
 
 
 class Edge(NamedTuple):
-    """Edge in a graph."""
+    """图中的边。"""
 
     source: str
-    """The source node id."""
+    """源节点 ID。"""
     target: str
-    """The target node id."""
+    """目标节点 ID。"""
     data: Stringifiable | None = None
-    """Optional data associated with the edge. """
+    """与边关联的可选数据。"""
     conditional: bool = False
-    """Whether the edge is conditional."""
+    """边是否有条件。"""
 
     def copy(self, *, source: str | None = None, target: str | None = None) -> Edge:
-        """Return a copy of the edge with optional new source and target nodes.
+        """返回边的副本，可选择新的源节点和目标节点。
 
         Args:
-            source: The new source node id.
-            target: The new target node id.
+            source: 新的源节点 ID。
+            target: 新的目标节点 ID。
 
         Returns:
-            A copy of the edge with the new source and target nodes.
+            具有新的源节点和目标节点的边的副本。
         """
         return Edge(
             source=source or self.source,
@@ -91,16 +91,16 @@ class Edge(NamedTuple):
 
 
 class Node(NamedTuple):
-    """Node in a graph."""
+    """图中的节点。"""
 
     id: str
-    """The unique identifier of the node."""
+    """节点的唯一标识符。"""
     name: str
-    """The name of the node."""
+    """节点的名称。"""
     data: type[BaseModel] | RunnableType | None
-    """The data of the node."""
+    """节点的数据。"""
     metadata: dict[str, Any] | None
-    """Optional metadata for the node. """
+    """节点的可选元数据。"""
 
     def copy(
         self,
@@ -108,14 +108,14 @@ class Node(NamedTuple):
         id: str | None = None,
         name: str | None = None,
     ) -> Node:
-        """Return a copy of the node with optional new id and name.
+        """返回节点的副本，可选择新的 ID 和名称。
 
         Args:
-            id: The new node id.
-            name: The new node name.
+            id: 新的节点 ID。
+            name: 新的节点名称。
 
         Returns:
-            A copy of the node with the new id and name.
+            具有新 ID 和名称的节点的副本。
         """
         return Node(
             id=id or self.id,
@@ -126,16 +126,16 @@ class Node(NamedTuple):
 
 
 class Branch(NamedTuple):
-    """Branch in a graph."""
+    """图中的分支。"""
 
     condition: Callable[..., str]
-    """A callable that returns a string representation of the condition."""
+    """返回条件字符串表示的可调用对象。"""
     ends: dict[str, str] | None
-    """Optional dictionary of end node IDs for the branches. """
+    """分支的结束节点 ID 的可选字典。"""
 
 
 class CurveStyle(Enum):
-    """Enum for different curve styles supported by Mermaid."""
+    """Mermaid 支持的不同曲线样式的枚举。"""
 
     BASIS = "basis"
     BUMP_X = "bumpX"
@@ -153,12 +153,12 @@ class CurveStyle(Enum):
 
 @dataclass
 class NodeStyles:
-    """Schema for Hexadecimal color codes for different node types.
+    """不同节点类型的十六进制颜色代码的模式。
 
     Args:
-        default: The default color code.
-        first: The color code for the first node.
-        last: The color code for the last node.
+        default: 默认颜色代码。
+        first: 第一个节点的颜色代码。
+        last: 最后一个节点的颜色代码。
     """
 
     default: str = "fill:#f2f0ff,line-height:1.2"
@@ -167,26 +167,26 @@ class NodeStyles:
 
 
 class MermaidDrawMethod(Enum):
-    """Enum for different draw methods supported by Mermaid."""
+    """Mermaid 支持的不同绘制方法的枚举。"""
 
     PYPPETEER = "pyppeteer"
-    """Uses Pyppeteer to render the graph"""
+    """使用 Pyppeteer 渲染图"""
     API = "api"
-    """Uses Mermaid.INK API to render the graph"""
+    """使用 Mermaid.INK API 渲染图"""
 
 
 def node_data_str(
     id: str,
     data: type[BaseModel] | RunnableType | None,
 ) -> str:
-    """Convert the data of a node to a string.
+    """将节点的数据转换为字符串。
 
     Args:
-        id: The node id.
-        data: The node data.
+        id: 节点 ID。
+        data: 节点数据。
 
     Returns:
-        A string representation of the data.
+        数据的字符串表示。
     """
     if not is_uuid(id) or data is None:
         return id
@@ -197,15 +197,14 @@ def node_data_str(
 def node_data_json(
     node: Node, *, with_schemas: bool = False
 ) -> dict[str, str | dict[str, Any]]:
-    """Convert the data of a node to a JSON-serializable format.
+    """将节点的数据转换为 JSON 可序列化格式。
 
     Args:
-        node: The `Node` to convert.
-        with_schemas: Whether to include the schema of the data if it is a Pydantic
-            model.
+        node: 要转换的 `Node`。
+        with_schemas: 是否在数据是 Pydantic 模型时包含其 schema。
 
     Returns:
-        A dictionary with the type of the data and the data itself.
+        包含数据类型和数据本身的字典。
     """
     if node.data is None:
         json: dict[str, Any] = {}
@@ -251,25 +250,24 @@ def node_data_json(
 
 @dataclass
 class Graph:
-    """Graph of nodes and edges.
+    """由节点和边组成的图。
 
     Args:
-        nodes: Dictionary of nodes in the graph. Defaults to an empty dictionary.
-        edges: List of edges in the graph. Defaults to an empty list.
+        nodes: 图中节点的字典。默认为空字典。
+        edges: 图中的边列表。默认为空列表。
     """
 
     nodes: dict[str, Node] = field(default_factory=dict)
     edges: list[Edge] = field(default_factory=list)
 
     def to_json(self, *, with_schemas: bool = False) -> dict[str, list[dict[str, Any]]]:
-        """Convert the graph to a JSON-serializable format.
+        """将图转换为 JSON 可序列化格式。
 
         Args:
-            with_schemas: Whether to include the schemas of the nodes if they are
-                Pydantic models.
+            with_schemas: 是否在节点是 Pydantic 模型时包含其 schema。
 
         Returns:
-            A dictionary with the nodes and edges of the graph.
+            包含图的节点和边的字典。
         """
         stable_node_ids = {
             node.id: i if is_uuid(node.id) else node.id
@@ -299,13 +297,13 @@ class Graph:
         }
 
     def __bool__(self) -> bool:
-        """Return whether the graph has any nodes."""
+        """返回图是否有任何节点。"""
         return bool(self.nodes)
 
     def next_id(self) -> str:
-        """Return a new unique node identifier.
+        """返回一个新的唯一节点标识符。
 
-        It that can be used to add a node to the graph.
+        可用于向图添加节点。
         """
         return uuid4().hex
 
@@ -316,18 +314,18 @@ class Graph:
         *,
         metadata: dict[str, Any] | None = None,
     ) -> Node:
-        """Add a node to the graph and return it.
+        """向图添加节点并返回它。
 
         Args:
-            data: The data of the node.
-            id: The id of the node.
-            metadata: Optional metadata for the node.
+            data: 节点的数据。
+            id: 节点的 ID。
+            metadata: 节点的可选元数据。
 
         Returns:
-            The node that was added to the graph.
+            添加的节点。
 
         Raises:
-            ValueError: If a node with the same id already exists.
+            ValueError: 如果已存在具有相同 ID 的节点。
         """
         if id is not None and id in self.nodes:
             msg = f"Node with id {id} already exists"
@@ -338,10 +336,10 @@ class Graph:
         return node
 
     def remove_node(self, node: Node) -> None:
-        """Remove a node from the graph and all edges connected to it.
+        """从图中移除节点及所有与其连接的边。
 
         Args:
-            node: The node to remove.
+            node: 要移除的节点。
         """
         self.nodes.pop(node.id)
         self.edges = [
@@ -355,19 +353,19 @@ class Graph:
         data: Stringifiable | None = None,
         conditional: bool = False,  # noqa: FBT001,FBT002
     ) -> Edge:
-        """Add an edge to the graph and return it.
+        """向图添加边并返回它。
 
         Args:
-            source: The source node of the edge.
-            target: The target node of the edge.
-            data: Optional data associated with the edge.
-            conditional: Whether the edge is conditional.
+            source: 边的源节点。
+            target: 边的目标节点。
+            data: 与边关联的可选数据。
+            conditional: 边是否有条件。
 
         Returns:
-            The edge that was added to the graph.
+            添加的边。
 
         Raises:
-            ValueError: If the source or target node is not in the graph.
+            ValueError: 如果源节点或目标节点不在图中。
         """
         if source.id not in self.nodes:
             msg = f"Source node {source.id} not in graph"
@@ -384,16 +382,16 @@ class Graph:
     def extend(
         self, graph: Graph, *, prefix: str = ""
     ) -> tuple[Node | None, Node | None]:
-        """Add all nodes and edges from another graph.
+        """从另一个图添加所有节点和边。
 
-        Note this doesn't check for duplicates, nor does it connect the graphs.
+        注意，此方法不检查重复，也不连接这两个图。
 
         Args:
-            graph: The graph to add.
-            prefix: The prefix to add to the node ids.
+            graph: 要添加的图。
+            prefix: 要添加到节点 ID 的前缀。
 
         Returns:
-            A tuple of the first and last nodes of the subgraph.
+            子图的第一个和最后一个节点的元组。
         """
         if all(is_uuid(node.id) for node in graph.nodes.values()):
             prefix = ""
@@ -401,18 +399,18 @@ class Graph:
         def prefixed(id_: str) -> str:
             return f"{prefix}:{id_}" if prefix else id_
 
-        # prefix each node
+        # 为每个节点添加前缀
         self.nodes.update(
             {prefixed(k): v.copy(id=prefixed(k)) for k, v in graph.nodes.items()}
         )
-        # prefix each edge's source and target
+        # 为每条边的源和目标添加前缀
         self.edges.extend(
             [
                 edge.copy(source=prefixed(edge.source), target=prefixed(edge.target))
                 for edge in graph.edges
             ]
         )
-        # return (prefixed) first and last nodes of the subgraph
+        # 返回子图的（带前缀的）第一个和最后一个节点
         first, last = graph.first_node(), graph.last_node()
         return (
             first.copy(id=prefixed(first.id)) if first else None,
@@ -420,9 +418,9 @@ class Graph:
         )
 
     def reid(self) -> Graph:
-        """Return a new graph with all nodes re-identified.
+        """返回所有节点重新标识的新图。
 
-        Uses their unique, readable names where possible.
+        尽可能使用其唯一的可读名称。
         """
         node_name_to_ids = defaultdict(list)
         for node in self.nodes.values():
@@ -455,33 +453,31 @@ class Graph:
         )
 
     def first_node(self) -> Node | None:
-        """Find the single node that is not a target of any edge.
+        """查找不是任何边目标的单个节点。
 
-        If there is no such node, or there are multiple, return `None`.
-        When drawing the graph, this node would be the origin.
+        如果没有这样的节点，或有多个，则返回 `None`。
+        绘制图时，此节点将是起点。
 
         Returns:
-            The first node, or None if there is no such node or multiple
-            candidates.
+            第一个节点，如果没有这样的节点或多个候选节点，则返回 None。
         """
         return _first_node(self)
 
     def last_node(self) -> Node | None:
-        """Find the single node that is not a source of any edge.
+        """查找不是任何边源的单个节点。
 
-        If there is no such node, or there are multiple, return `None`.
-        When drawing the graph, this node would be the destination.
+        如果没有这样的节点，或有多个，则返回 `None`。
+        绘制图时，此节点将是终点。
 
         Returns:
-            The last node, or None if there is no such node or multiple
-            candidates.
+            最后一个节点，如果没有这样的节点或多个候选节点，则返回 None。
         """
         return _last_node(self)
 
     def trim_first_node(self) -> None:
-        """Remove the first node if it exists and has a single outgoing edge.
+        """如果第一个节点存在且只有一条出边，则移除它。
 
-        i.e., if removing it would not leave the graph without a "first" node.
+        即，如果移除它不会使图没有"第一个"节点。
         """
         first_node = self.first_node()
         if (
@@ -492,9 +488,9 @@ class Graph:
             self.remove_node(first_node)
 
     def trim_last_node(self) -> None:
-        """Remove the last node if it exists and has a single incoming edge.
+        """如果最后一个节点存在且只有一条入边，则移除它。
 
-        i.e., if removing it would not leave the graph without a "last" node.
+        即，如果移除它不会使图没有"最后一个"节点。
         """
         last_node = self.last_node()
         if (
@@ -505,12 +501,12 @@ class Graph:
             self.remove_node(last_node)
 
     def draw_ascii(self) -> str:
-        """Draw the graph as an ASCII art string.
+        """将图绘制为 ASCII 艺术字符串。
 
         Returns:
-            The ASCII art string.
+            ASCII 艺术字符串。
         """
-        # Import locally to prevent circular import
+        # 本地导入以避免循环导入
         from langchain_core.runnables.graph_ascii import draw_ascii  # noqa: PLC0415
 
         return draw_ascii(
@@ -519,7 +515,7 @@ class Graph:
         )
 
     def print_ascii(self) -> None:
-        """Print the graph as an ASCII art string."""
+        """将图打印为 ASCII 艺术字符串。"""
         print(self.draw_ascii())  # noqa: T201
 
     @overload
@@ -544,19 +540,17 @@ class Graph:
         fontname: str | None = None,
         labels: LabelsDict | None = None,
     ) -> bytes | None:
-        """Draw the graph as a PNG image.
+        """将图绘制为 PNG 图片。
 
         Args:
-            output_file_path: The path to save the image to. If `None`, the image
-                is not saved.
-            fontname: The name of the font to use.
-            labels: Optional labels for nodes and edges in the graph. Defaults to
-                `None`.
+            output_file_path: 保存图片的路径。如果为 `None`，则不保存图片。
+            fontname: 要使用的字体名称。
+            labels: 图中节点和边的可选标签。默认为 `None`。
 
         Returns:
-            The PNG image as bytes if output_file_path is None, None otherwise.
+            如果 output_file_path 为 None，则返回 PNG 图片字节，否则返回 None。
         """
-        # Import locally to prevent circular import
+        # 本地导入以避免循环导入
         from langchain_core.runnables.graph_png import PngDrawer  # noqa: PLC0415
 
         default_node_labels = {node.id: node.name for node in self.nodes.values()}
@@ -581,20 +575,19 @@ class Graph:
         wrap_label_n_words: int = 9,
         frontmatter_config: dict[str, Any] | None = None,
     ) -> str:
-        """Draw the graph as a Mermaid syntax string.
+        """将图绘制为 Mermaid 语法字符串。
 
         Args:
-            with_styles: Whether to include styles in the syntax.
-            curve_style: The style of the edges.
-            node_colors: The colors of the nodes.
-            wrap_label_n_words: The number of words to wrap the node labels at.
-            frontmatter_config: Mermaid frontmatter config.
-                Can be used to customize theme and styles. Will be converted to YAML and
-                added to the beginning of the mermaid graph.
+            with_styles: 是否在语法中包含样式。
+            curve_style: 边的样式。
+            node_colors: 节点的颜色。
+            wrap_label_n_words: 节点标签换行的单词数。
+            frontmatter_config: Mermaid frontmatter 配置。
+                可用于自定义主题和样式。将转换为 YAML 并添加到 Mermaid 图的开头。
 
-                See more here: https://mermaid.js.org/config/configuration.html.
+                更多信息请参阅：https://mermaid.js.org/config/configuration.html。
 
-                Example config:
+                示例配置：
 
                 ```python
                 {
@@ -606,9 +599,9 @@ class Graph:
                 }
                 ```
         Returns:
-            The Mermaid syntax string.
+            Mermaid 语法字符串。
         """
-        # Import locally to prevent circular import
+        # 本地导入以避免循环导入
         from langchain_core.runnables.graph_mermaid import draw_mermaid  # noqa: PLC0415
 
         graph = self.reid()
@@ -643,26 +636,24 @@ class Graph:
         base_url: str | None = None,
         proxies: dict[str, str] | None = None,
     ) -> bytes:
-        """Draw the graph as a PNG image using Mermaid.
+        """使用 Mermaid 将图绘制为 PNG 图片。
 
         Args:
-            curve_style: The style of the edges.
-            node_colors: The colors of the nodes.
-            wrap_label_n_words: The number of words to wrap the node labels at.
-            output_file_path: The path to save the image to. If `None`, the image
-                is not saved.
-            draw_method: The method to use to draw the graph.
-            background_color: The color of the background.
-            padding: The padding around the graph.
-            max_retries: The maximum number of retries (`MermaidDrawMethod.API`).
-            retry_delay: The delay between retries (`MermaidDrawMethod.API`).
-            frontmatter_config: Mermaid frontmatter config.
-                Can be used to customize theme and styles. Will be converted to YAML and
-                added to the beginning of the mermaid graph.
+            curve_style: 边的样式。
+            node_colors: 节点的颜色。
+            wrap_label_n_words: 节点标签换行的单词数。
+            output_file_path: 保存图片的路径。如果为 `None`，则不保存图片。
+            draw_method: 用于绘制图的方法。
+            background_color: 背景颜色。
+            padding: 图周围的内边距。
+            max_retries: 最大重试次数（`MermaidDrawMethod.API`）。
+            retry_delay: 重试之间的延迟（`MermaidDrawMethod.API`）。
+            frontmatter_config: Mermaid frontmatter 配置。
+                可用于自定义主题和样式。将转换为 YAML 并添加到 Mermaid 图的开头。
 
-                See more here: https://mermaid.js.org/config/configuration.html.
+                更多信息请参阅：https://mermaid.js.org/config/configuration.html。
 
-                Example config:
+                示例配置：
 
                 ```python
                 {
@@ -673,13 +664,13 @@ class Graph:
                     }
                 }
                 ```
-            base_url: The base URL of the Mermaid server for rendering via API.
-            proxies: HTTP/HTTPS proxies for requests (e.g. `{"http": "http://127.0.0.1:7890"}`).
+            base_url: 用于通过 API 渲染的 Mermaid 服务器的基础 URL。
+            proxies: 请求的 HTTP/HTTPS 代理（例如 `{"http": "http://127.0.0.1:7890"}`）。
 
         Returns:
-            The PNG image as bytes.
+            PNG 图片字节。
         """
-        # Import locally to prevent circular import
+        # 本地导入以避免循环导入
         from langchain_core.runnables.graph_mermaid import (  # noqa: PLC0415
             draw_mermaid_png,
         )
@@ -704,13 +695,13 @@ class Graph:
 
 
 def _first_node(graph: Graph, exclude: Sequence[str] = ()) -> Node | None:
-    """Find the single node that is not a target of any edge.
+    """查找不是任何边目标的单个节点。
 
-    Exclude nodes/sources with IDs in the exclude list.
+    排除 ID 在排除列表中的节点/源。
 
-    If there is no such node, or there are multiple, return `None`.
+    如果没有这样的节点，或有多个，则返回 `None`。
 
-    When drawing the graph, this node would be the origin.
+    绘制图时，此节点将是起点。
     """
     targets = {edge.target for edge in graph.edges if edge.source not in exclude}
     found: list[Node] = [
@@ -722,13 +713,13 @@ def _first_node(graph: Graph, exclude: Sequence[str] = ()) -> Node | None:
 
 
 def _last_node(graph: Graph, exclude: Sequence[str] = ()) -> Node | None:
-    """Find the single node that is not a source of any edge.
+    """查找不是任何边源的单个节点。
 
-    Exclude nodes/targets with IDs in the exclude list.
+    排除 ID 在排除列表中的节点/目标。
 
-    If there is no such node, or there are multiple, return `None`.
+    如果没有这样的节点，或有多个，则返回 `None`。
 
-    When drawing the graph, this node would be the destination.
+    绘制图时，此节点将是终点。
     """
     sources = {edge.source for edge in graph.edges if edge.target not in exclude}
     found: list[Node] = [

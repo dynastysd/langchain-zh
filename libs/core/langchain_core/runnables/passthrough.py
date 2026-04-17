@@ -1,4 +1,4 @@
-"""Implementation of the `RunnablePassthrough`."""
+"""直通链（RunnablePassthrough）的实现。"""
 
 from __future__ import annotations
 
@@ -48,39 +48,37 @@ if TYPE_CHECKING:
 
 
 def identity(x: Other) -> Other:
-    """Identity function.
+    """恒等函数。
 
     Args:
-        x: Input.
+        x: 输入。
 
     Returns:
-        Output.
+        输出。
     """
     return x
 
 
 async def aidentity(x: Other) -> Other:
-    """Async identity function.
+    """异步恒等函数。
 
     Args:
-        x: Input.
+        x: 输入。
 
     Returns:
-        Output.
+        输出。
     """
     return x
 
 
 class RunnablePassthrough(RunnableSerializable[Other, Other]):
-    """Runnable to passthrough inputs unchanged or with additional keys.
+    """直通链（RunnablePassthrough）：原样传递输入，或添加额外的键。
 
-    This `Runnable` behaves almost like the identity function, except that it
-    can be configured to add additional keys to the output, if the input is a
-    dict.
+    此 Runnable 的行为与恒等函数几乎相同，只是如果输入是字典，
+    则可以配置为向输出添加额外的键。
 
-    The examples below demonstrate this `Runnable` works using a few simple
-    chains. The chains rely on simple lambdas to make the examples easy to execute
-    and experiment with.
+    以下示例演示了此 Runnable 如何通过几个简单的链工作。
+    这些链依赖于简单的 lambda，以便于执行和实验。
 
     Examples:
         ```python
@@ -97,26 +95,26 @@ class RunnablePassthrough(RunnableSerializable[Other, Other]):
         runnable.invoke(1)  # {'origin': 1, 'modified': 2}
 
 
-        def fake_llm(prompt: str) -> str:  # Fake LLM for the example
+        def fake_llm(prompt: str) -> str:  # 示例用的假LLM
             return "completion"
 
 
         chain = RunnableLambda(fake_llm) | {
-            "original": RunnablePassthrough(),  # Original LLM output
-            "parsed": lambda text: text[::-1],  # Parsing logic
+            "original": RunnablePassthrough(),  # 原始 LLM 输出
+            "parsed": lambda text: text[::-1],  # 解析逻辑
         }
 
         chain.invoke("hello")  # {'original': 'completion', 'parsed': 'noitelpmoc'}
         ```
 
-    In some cases, it may be useful to pass the input through while adding some
-    keys to the output. In this case, you can use the `assign` method:
+    在某些情况下，可能需要在传递输入的同时向输出添加一些键。
+    在这种情况下，可以使用 `assign` 方法：
 
         ```python
         from langchain_core.runnables import RunnablePassthrough
 
 
-        def fake_llm(prompt: str) -> str:  # Fake LLM for the example
+        def fake_llm(prompt: str) -> str:  # 示例用的假LLM
             return "completion"
 
 
@@ -146,8 +144,8 @@ class RunnablePassthrough(RunnableSerializable[Other, Other]):
 
     @override
     def __repr_args__(self) -> Any:
-        # Without this repr(self) raises a RecursionError
-        # See https://github.com/pydantic/pydantic/issues/7327
+        # 没有这个 repr(self) 会引发 RecursionError
+        # 见 https://github.com/pydantic/pydantic/issues/7327
         return []
 
     def __init__(
@@ -164,12 +162,12 @@ class RunnablePassthrough(RunnableSerializable[Other, Other]):
         input_type: type[Other] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Create a `RunnablePassthrough`.
+        """创建直通链（RunnablePassthrough）。
 
         Args:
-            func: Function to be called with the input.
-            afunc: Async function to be called with the input.
-            input_type: Type of the input.
+            func: 要使用输入调用的函数。
+            afunc: 要使用输入调用的异步函数。
+            input_type: 输入的类型。
         """
         if inspect.iscoroutinefunction(func):
             afunc = func
@@ -180,12 +178,12 @@ class RunnablePassthrough(RunnableSerializable[Other, Other]):
     @classmethod
     @override
     def is_lc_serializable(cls) -> bool:
-        """Return `True` as this class is serializable."""
+        """返回 `True`，因为此类可序列化。"""
         return True
 
     @classmethod
     def get_lc_namespace(cls) -> list[str]:
-        """Get the namespace of the LangChain object.
+        """获取 LangChain 对象的命名空间。
 
         Returns:
             `["langchain", "schema", "runnable"]`
@@ -210,15 +208,13 @@ class RunnablePassthrough(RunnableSerializable[Other, Other]):
         | Callable[[dict[str, Any]], Any]
         | Mapping[str, Runnable[dict[str, Any], Any] | Callable[[dict[str, Any]], Any]],
     ) -> RunnableAssign:
-        """Merge the Dict input with the output produced by the mapping argument.
+        """将 Dict 输入与映射参数生成的输出合并。
 
         Args:
-            **kwargs: `Runnable`, `Callable` or a `Mapping` from keys to `Runnable`
-                objects or `Callable`s.
+            **kwargs: `Runnable`、`Callable` 或从键到 `Runnable` 对象或 `Callable` 的映射。
 
         Returns:
-            A `Runnable` that merges the `dict` input with the output produced by the
-            mapping argument.
+            一个将 dict 输入与映射参数生成的输出合并的 Runnable。
         """
         return RunnableAssign(RunnableParallel[dict[str, Any]](kwargs))
 
@@ -300,11 +296,9 @@ class RunnablePassthrough(RunnableSerializable[Other, Other]):
             ):
                 yield chunk
 
-                # By definitions, a function will operate on the aggregated
-                # input. So we'll aggregate the input until we get to the last
-                # chunk.
-                # If the input is not addable, then we'll assume that we can
-                # only operate on the last chunk.
+                # 根据定义，函数将对聚合的输入进行操作。
+                # 因此，我们将聚合输入，直到到达最后一个块。
+                # 如果输入不可添加，那么我们将假设只能对最后一个块进行操作。
                 if not got_first_chunk:
                     final = chunk
                     got_first_chunk = True
@@ -350,16 +344,15 @@ _graph_passthrough: RunnablePassthrough = RunnablePassthrough()
 
 
 class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
-    """Runnable that assigns key-value pairs to `dict[str, Any]` inputs.
+    """赋值链（RunnableAssign）：向 `dict[str, Any]` 输入分配键值对。
 
-    The `RunnableAssign` class takes input dictionaries and, through a
-    `RunnableParallel` instance, applies transformations, then combines
-    these with the original data, introducing new key-value pairs based
-    on the mapper's logic.
+    赋值链类通过 `RunnableParallel`（并行链）实例获取输入字典，
+    应用转换，然后将这些转换与原始数据组合，
+    根据映射器的逻辑引入新的键值对。
 
     Examples:
         ```python
-        # This is a RunnableAssign
+        # 这是一个 RunnableAssign
         from langchain_core.runnables.passthrough import (
             RunnableAssign,
             RunnableParallel,
@@ -379,37 +372,36 @@ class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
 
         runnable_assign = RunnableAssign(mapper)
 
-        # Synchronous example
+        # 同步示例
         runnable_assign.invoke({"input": 5})
-        # returns {'input': 5, 'add_step': {'added': 15}}
+        # 返回 {'input': 5, 'add_step': {'added': 15}}
 
-        # Asynchronous example
+        # 异步示例
         await runnable_assign.ainvoke({"input": 5})
-        # returns {'input': 5, 'add_step': {'added': 15}}
+        # 返回 {'input': 5, 'add_step': {'added': 15}}
         ```
     """
 
     mapper: RunnableParallel
 
     def __init__(self, mapper: RunnableParallel[dict[str, Any]], **kwargs: Any) -> None:
-        """Create a `RunnableAssign`.
+        """创建赋值链（RunnableAssign）。
 
         Args:
-            mapper: A `RunnableParallel` instance that will be used to transform the
-                input dictionary.
+            mapper: 一个 `RunnableParallel`（并行链）实例，用于转换输入字典。
         """
         super().__init__(mapper=mapper, **kwargs)
 
     @classmethod
     @override
     def is_lc_serializable(cls) -> bool:
-        """Return `True` as this class is serializable."""
+        """返回 `True`，因为此类可序列化。"""
         return True
 
     @classmethod
     @override
     def get_lc_namespace(cls) -> list[str]:
-        """Get the namespace of the LangChain object.
+        """获取 LangChain 对象的命名空间。
 
         Returns:
             `["langchain", "schema", "runnable"]`
@@ -453,8 +445,8 @@ class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
 
             return create_model_v2("RunnableAssignOutput", field_definitions=fields)
         if not issubclass(map_output_schema, RootModel):
-            # ie. only map output is a dict
-            # ie. input type is either unknown or inferred incorrectly
+            # 即只有映射输出是字典
+            # 即输入类型未知或推断不正确
             return map_output_schema
 
         return super().get_output_schema(config)
@@ -466,9 +458,9 @@ class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
 
     @override
     def get_graph(self, config: RunnableConfig | None = None) -> Graph:
-        # get graph from mapper
+        # 从映射器获取图
         graph = self.mapper.get_graph(config)
-        # add passthrough node and edges
+        # 添加直通节点和边
         input_node = graph.first_node()
         output_node = graph.last_node()
         if input_node is not None and output_node is not None:
@@ -542,12 +534,12 @@ class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
         config: RunnableConfig,
         **kwargs: Any,
     ) -> Iterator[dict[str, Any]]:
-        # collect mapper keys
+        # 收集映射器的键
         mapper_keys = set(self.mapper.steps__.keys())
-        # create two streams, one for the map and one for the passthrough
+        # 创建两个流，一个用于映射，一个用于直通
         for_passthrough, for_map = safetee(values, 2, lock=threading.Lock())
 
-        # create map output stream
+        # 创建映射输出流
         map_output = self.mapper.transform(
             for_map,
             patch_config(
@@ -557,26 +549,26 @@ class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
             **kwargs,
         )
 
-        # get executor to start map output stream in background
+        # 获取执行器以在后台启动映射输出流
         with get_executor_for_config(config) as executor:
-            # start map output stream
+            # 启动映射输出流
             first_map_chunk_future = executor.submit(
                 next,
                 map_output,
                 None,
             )
-            # consume passthrough stream
+            # 消费直通流
             for chunk in for_passthrough:
                 if not isinstance(chunk, dict):
                     msg = "The input to RunnablePassthrough.assign() must be a dict."
                     raise ValueError(msg)  # noqa: TRY004
-                # remove mapper keys from passthrough chunk, to be overwritten by map
+                # 从直通块中移除映射器的键，以便被映射覆盖
                 filtered = AddableDict(
                     {k: v for k, v in chunk.items() if k not in mapper_keys}
                 )
                 if filtered:
                     yield filtered
-            # yield map output
+            # 生成映射输出
             yield cast("dict[str, Any]", first_map_chunk_future.result())
             for chunk in map_output:
                 yield chunk
@@ -599,11 +591,11 @@ class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
         config: RunnableConfig,
         **kwargs: Any,
     ) -> AsyncIterator[dict[str, Any]]:
-        # collect mapper keys
+        # 收集映射器的键
         mapper_keys = set(self.mapper.steps__.keys())
-        # create two streams, one for the map and one for the passthrough
+        # 创建两个流，一个用于映射，一个用于直通
         for_passthrough, for_map = atee(values, 2, lock=asyncio.Lock())
-        # create map output stream
+        # 创建映射输出流
         map_output = self.mapper.atransform(
             for_map,
             patch_config(
@@ -612,23 +604,23 @@ class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
             ),
             **kwargs,
         )
-        # start map output stream
+        # 启动映射输出流
         first_map_chunk_task: asyncio.Task = asyncio.create_task(
             anext(map_output, None),
         )
-        # consume passthrough stream
+        # 消费直通流
         async for chunk in for_passthrough:
             if not isinstance(chunk, dict):
                 msg = "The input to RunnablePassthrough.assign() must be a dict."
                 raise ValueError(msg)  # noqa: TRY004
 
-            # remove mapper keys from passthrough chunk, to be overwritten by map output
+            # 从直通块中移除映射器的键，以便被映射输出覆盖
             filtered = AddableDict(
                 {k: v for k, v in chunk.items() if k not in mapper_keys}
             )
             if filtered:
                 yield filtered
-        # yield map output
+        # 生成映射输出
         yield await first_map_chunk_task
         async for chunk in map_output:
             yield chunk
@@ -669,18 +661,16 @@ class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
 
 
 class RunnablePick(RunnableSerializable[dict[str, Any], Any]):
-    """`Runnable` that picks keys from `dict[str, Any]` inputs.
+    """选择链（RunnablePick）：从 `dict[str, Any]` 输入中选择键。
 
-    `RunnablePick` class represents a `Runnable` that selectively picks keys from a
-    dictionary input. It allows you to specify one or more keys to extract
-    from the input dictionary.
+    选择链类表示一个 Runnable，它可以有选择地从字典输入中选取键。
+    它允许您指定一个或多个键来从输入字典中提取。
 
-    !!! note "Return Type Behavior"
-        The return type depends on the `keys` parameter:
+    !!! note "返回类型行为"
+        返回类型取决于 `keys` 参数：
 
-        - When `keys` is a `str`: Returns the single value associated with that key
-        - When `keys` is a `list`: Returns a dictionary containing only the selected
-            keys
+        - 当 `keys` 是 `str` 时：返回与该键关联的单个值
+        - 当 `keys` 是 `list` 时：返回一个仅包含所选键的字典
 
     Example:
         ```python
@@ -693,38 +683,38 @@ class RunnablePick(RunnableSerializable[dict[str, Any], Any]):
             "country": "USA",
         }
 
-        # Single key - returns the value directly
+        # 单个键 - 直接返回值
         runnable_single = RunnablePick(keys="name")
         result_single = runnable_single.invoke(input_data)
-        print(result_single)  # Output: "John"
+        print(result_single)  # 输出: "John"
 
-        # Multiple keys - returns a dictionary
+        # 多个键 - 返回字典
         runnable_multiple = RunnablePick(keys=["name", "age"])
         result_multiple = runnable_multiple.invoke(input_data)
-        print(result_multiple)  # Output: {'name': 'John', 'age': 30}
+        print(result_multiple)  # 输出: {'name': 'John', 'age': 30}
         ```
     """
 
     keys: str | list[str]
 
     def __init__(self, keys: str | list[str], **kwargs: Any) -> None:
-        """Create a `RunnablePick`.
+        """创建选择链（RunnablePick）。
 
         Args:
-            keys: A single key or a list of keys to pick from the input dictionary.
+            keys: 要从输入字典中选取的单个键或键列表。
         """
         super().__init__(keys=keys, **kwargs)
 
     @classmethod
     @override
     def is_lc_serializable(cls) -> bool:
-        """Return `True` as this class is serializable."""
+        """返回 `True`，因为此类可序列化。"""
         return True
 
     @classmethod
     @override
     def get_lc_namespace(cls) -> list[str]:
-        """Get the namespace of the LangChain object.
+        """获取 LangChain 对象的命名空间。
 
         Returns:
             `["langchain", "schema", "runnable"]`

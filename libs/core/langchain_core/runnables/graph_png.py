@@ -1,4 +1,4 @@
-"""Helper class to draw a state graph into a PNG file."""
+"""将状态图绘制为 PNG 文件的辅助类。"""
 
 from itertools import groupby
 from typing import Any, cast
@@ -14,11 +14,11 @@ except ImportError:
 
 
 class PngDrawer:
-    """Helper class to draw a state graph into a PNG file.
+    """将状态图绘制为 PNG 文件的辅助类。
 
-    It requires `graphviz` and `pygraphviz` to be installed.
+    需要安装 `graphviz` 和 `pygraphviz`。
 
-    Example:
+    示例:
         ```python
         drawer = PngDrawer()
         drawer.draw(state_graph, "graph.png")
@@ -28,12 +28,11 @@ class PngDrawer:
     def __init__(
         self, fontname: str | None = None, labels: LabelsDict | None = None
     ) -> None:
-        """Initializes the PNG drawer.
+        """初始化 PNG 绘制器。
 
         Args:
-            fontname: The font to use for the labels. Defaults to "arial".
-            labels: A dictionary of label overrides. The dictionary
-                should have the following format:
+            fontname: 用于标签的字体。默认为 "arial"。
+            labels: 标签覆盖字典。字典应具有以下格式：
                 {
                     "nodes": {
                         "node1": "CustomLabel1",
@@ -45,42 +44,42 @@ class PngDrawer:
                         "end": "EndLabel"
                     }
                 }
-                The keys are the original labels, and the values are the new labels.
+                键是原始标签，值是新标签。
 
         """
         self.fontname = fontname or "arial"
         self.labels = labels or LabelsDict(nodes={}, edges={})
 
     def get_node_label(self, label: str) -> str:
-        """Returns the label to use for a node.
+        """返回节点要使用的标签。
 
         Args:
-            label: The original label.
+            label: 原始标签。
 
         Returns:
-            The new label.
+            新标签。
         """
         label = self.labels.get("nodes", {}).get(label, label)
         return f"<<B>{label}</B>>"
 
     def get_edge_label(self, label: str) -> str:
-        """Returns the label to use for an edge.
+        """返回边要使用的标签。
 
         Args:
-            label: The original label.
+            label: 原始标签。
 
         Returns:
-            The new label.
+            新标签。
         """
         label = self.labels.get("edges", {}).get(label, label)
         return f"<<U>{label}</U>>"
 
     def add_node(self, viz: Any, node: str) -> None:
-        """Adds a node to the graph.
+        """向图中添加节点。
 
         Args:
-            viz: The graphviz object.
-            node: The node to add.
+            viz: graphviz 对象。
+            node: 要添加的节点。
         """
         viz.add_node(
             node,
@@ -99,14 +98,14 @@ class PngDrawer:
         label: str | None = None,
         conditional: bool = False,  # noqa: FBT001,FBT002
     ) -> None:
-        """Adds an edge to the graph.
+        """向图中添加边。
 
         Args:
-            viz: The graphviz object.
-            source: The source node.
-            target: The target node.
-            label: The label for the edge.
-            conditional: Whether the edge is conditional.
+            viz: graphviz 对象。
+            source: 源节点。
+            target: 目标节点。
+            label: 边的标签。
+            conditional: 边是否有条件。
         """
         viz.add_edge(
             source,
@@ -118,47 +117,47 @@ class PngDrawer:
         )
 
     def draw(self, graph: Graph, output_path: str | None = None) -> bytes | None:
-        """Draw the given state graph into a PNG file.
+        """将给定的状态图绘制为 PNG 文件。
 
-        Requires `graphviz` and `pygraphviz` to be installed.
+        需要安装 `graphviz` 和 `pygraphviz`。
 
         Args:
-            graph: The graph to draw
-            output_path: The path to save the PNG. If `None`, PNG bytes are returned.
+            graph: 要绘制的图。
+            output_path: 保存 PNG 的路径。如果为 `None`，则返回 PNG 字节。
 
         Raises:
-            ImportError: If `pygraphviz` is not installed.
+            ImportError: 如果未安装 `pygraphviz`。
 
         Returns:
-            The PNG bytes if `output_path` is None, else None.
+            如果 `output_path` 为 None，则返回 PNG 字节，否则返回 None。
         """
         if not _HAS_PYGRAPHVIZ:
-            msg = "Install pygraphviz to draw graphs: `pip install pygraphviz`."
+            msg = "安装 pygraphviz 以绘制图：`pip install pygraphviz`。"
             raise ImportError(msg)
 
-        # Create a directed graph
+        # 创建一个有向图
         viz = pgv.AGraph(directed=True, nodesep=0.9, ranksep=1.0)
 
-        # Add nodes, conditional edges, and edges to the graph
+        # 将节点、条件边和边添加到图中
         self.add_nodes(viz, graph)
         self.add_edges(viz, graph)
         self.add_subgraph(viz, [node.split(":") for node in graph.nodes])
 
-        # Update entrypoint and END styles
+        # 更新入口点和 END 样式
         self.update_styles(viz, graph)
 
-        # Save the graph as PNG
+        # 将图保存为 PNG
         try:
             return cast("bytes | None", viz.draw(output_path, format="png", prog="dot"))
         finally:
             viz.close()
 
     def add_nodes(self, viz: Any, graph: Graph) -> None:
-        """Add nodes to the graph.
+        """向图中添加节点。
 
         Args:
-            viz: The graphviz object.
-            graph: The graph to draw.
+            viz: graphviz 对象。
+            graph: 要绘制的图。
         """
         for node in graph.nodes:
             self.add_node(viz, node)
@@ -169,12 +168,12 @@ class PngDrawer:
         nodes: list[list[str]],
         parent_prefix: list[str] | None = None,
     ) -> None:
-        """Add subgraphs to the graph.
+        """向图中添加子图。
 
         Args:
-            viz: The graphviz object.
-            nodes: The nodes to add.
-            parent_prefix: The prefix of the parent subgraph.
+            viz: graphviz 对象。
+            nodes: 要添加的节点。
+            parent_prefix: 父子图的前缀。
         """
         for prefix, grouped in groupby(
             [node[:] for node in sorted(nodes)],
@@ -190,11 +189,11 @@ class PngDrawer:
                 self.add_subgraph(subgraph, grouped_nodes, current_prefix)
 
     def add_edges(self, viz: Any, graph: Graph) -> None:
-        """Add edges to the graph.
+        """向图中添加边。
 
         Args:
-            viz: The graphviz object.
-            graph: The graph to draw.
+            viz: graphviz 对象。
+            graph: 要绘制的图。
         """
         for start, end, data, cond in graph.edges:
             self.add_edge(
@@ -203,11 +202,11 @@ class PngDrawer:
 
     @staticmethod
     def update_styles(viz: Any, graph: Graph) -> None:
-        """Update the styles of the entrypoint and END nodes.
+        """更新入口点和 END 节点的样式。
 
         Args:
-            viz: The graphviz object.
-            graph: The graph to draw.
+            viz: graphviz 对象。
+            graph: 要绘制的图。
         """
         if first := graph.first_node():
             viz.get_node(first.id).attr.update(fillcolor="lightblue")

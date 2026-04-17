@@ -1,4 +1,4 @@
-"""Runnable that selects which branch to run based on a condition."""
+"""根据条件选择运行哪个分支的分支链（RunnableBranch）。"""
 
 from collections.abc import (
     AsyncIterator,
@@ -40,17 +40,16 @@ _MIN_BRANCHES = 2
 
 
 class RunnableBranch(RunnableSerializable[Input, Output]):
-    """`Runnable` that selects which branch to run based on a condition.
+    """根据条件选择运行哪个分支的分支链（RunnableBranch）。
 
-    The `Runnable` is initialized with a list of `(condition, Runnable)` pairs and
-    a default branch.
+    初始化时传入一组 `(condition, Runnable)` 对（即分支条件及其对应的可运行单元）和一个默认分支。
 
-    When operating on an input, the first condition that evaluates to True is
-    selected, and the corresponding `Runnable` is run on the input.
+    当处理输入时，从第一个条件开始逐个评估，第一个评估为 True 的条件被选中，
+    然后对应的 Runnable 会对该输入执行。
 
-    If no condition evaluates to `True`, the default branch is run on the input.
+    如果没有条件评估为 True，则运行默认分支。
 
-    Examples:
+    示例：
         ```python
         from langchain_core.runnables import RunnableBranch
 
@@ -67,9 +66,9 @@ class RunnableBranch(RunnableSerializable[Input, Output]):
     """
 
     branches: Sequence[tuple[Runnable[Input, bool], Runnable[Input, Output]]]
-    """A list of `(condition, Runnable)` pairs."""
+    """`(condition, Runnable)` 对的列表，表示分支条件及其对应的可运行单元。"""
     default: Runnable[Input, Output]
-    """A `Runnable` to run if no condition is met."""
+    """当没有条件满足时运行的 Runnable（即可运行单元）。"""
 
     def __init__(
         self,
@@ -81,17 +80,17 @@ class RunnableBranch(RunnableSerializable[Input, Output]):
         ]
         | RunnableLike,
     ) -> None:
-        """A `Runnable` that runs one of two branches based on a condition.
+        """根据条件运行两个分支之一的可运行单元（Runnable）。
 
-        Args:
-            *branches: A list of `(condition, Runnable)` pairs.
-                Defaults a `Runnable` to run if no condition is met.
+        参数：
+            *branches: 一个 `(condition, Runnable)` 对的列表。
+                最后一个元素作为默认的 Runnable，当没有条件满足时运行。
 
-        Raises:
-            ValueError: If the number of branches is less than `2`.
-            TypeError: If the default branch is not `Runnable`, `Callable` or `Mapping`.
-            TypeError: If a branch is not a `tuple` or `list`.
-            ValueError: If a branch is not of length `2`.
+        异常：
+            ValueError: 如果分支数量少于 2 个。
+            TypeError: 如果默认分支不是 Runnable、Callable 或 Mapping。
+            TypeError: 如果某个分支不是 tuple 或 list。
+            ValueError: 如果某个分支的长度不为 2。
         """
         if len(branches) < _MIN_BRANCHES:
             msg = "RunnableBranch requires at least two branches"
@@ -142,15 +141,15 @@ class RunnableBranch(RunnableSerializable[Input, Output]):
 
     @classmethod
     def is_lc_serializable(cls) -> bool:
-        """Return `True` as this class is serializable."""
+        """返回 `True`，因为此类可序列化。"""
         return True
 
     @classmethod
     @override
     def get_lc_namespace(cls) -> list[str]:
-        """Get the namespace of the LangChain object.
+        """获取 LangChain 对象的命名空间。
 
-        Returns:
+        返回值：
             `["langchain", "schema", "runnable"]`
         """
         return ["langchain", "schema", "runnable"]
@@ -189,15 +188,15 @@ class RunnableBranch(RunnableSerializable[Input, Output]):
     def invoke(
         self, input: Input, config: RunnableConfig | None = None, **kwargs: Any
     ) -> Output:
-        """First evaluates the condition, then delegate to `True` or `False` branch.
+        """首先评估条件，然后委托给 `True` 或 `False` 分支。
 
-        Args:
-            input: The input to the `Runnable`.
-            config: The configuration for the `Runnable`.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+        参数：
+            input: 可运行单元的输入。
+            config: 可运行单元的配置。
+            **kwargs: 传递给可运行单元的其他关键字参数。
 
-        Returns:
-            The output of the branch that was run.
+        返回值：
+            所运行分支的输出。
         """
         config = ensure_config(config)
         callback_manager = get_callback_manager_for_config(config)
@@ -299,15 +298,15 @@ class RunnableBranch(RunnableSerializable[Input, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> Iterator[Output]:
-        """First evaluates the condition, then delegate to `True` or `False` branch.
+        """首先评估条件，然后委托给 `True` 或 `False` 分支。
 
-        Args:
-            input: The input to the `Runnable`.
-            config: The configuration for the `Runnable`.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+        参数：
+            input: 可运行单元的输入。
+            config: 可运行单元的配置。
+            **kwargs: 传递给可运行单元的其他关键字参数。
 
-        Yields:
-            The output of the branch that was run.
+        生成：
+            所运行分支的输出。
         """
         config = ensure_config(config)
         callback_manager = get_callback_manager_for_config(config)
@@ -383,15 +382,15 @@ class RunnableBranch(RunnableSerializable[Input, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> AsyncIterator[Output]:
-        """First evaluates the condition, then delegate to `True` or `False` branch.
+        """首先评估条件，然后委托给 `True` 或 `False` 分支。
 
-        Args:
-            input: The input to the `Runnable`.
-            config: The configuration for the `Runnable`.
-            **kwargs: Additional keyword arguments to pass to the `Runnable`.
+        参数：
+            input: 可运行单元的输入。
+            config: 可运行单元的配置。
+            **kwargs: 传递给可运行单元的其他关键字参数。
 
-        Yields:
-            The output of the branch that was run.
+        生成：
+            所运行分支的输出。
         """
         config = ensure_config(config)
         callback_manager = get_async_callback_manager_for_config(config)

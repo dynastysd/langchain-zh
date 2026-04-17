@@ -1,4 +1,4 @@
-"""Utility code for `Runnable` objects."""
+"""`Runnable`（可运行单元）对象的工具代码。"""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ import inspect
 import sys
 import textwrap
 
-# Cannot move to TYPE_CHECKING as Mapping and Sequence are needed at runtime by
-# RunnableConfigurableFields.
+# 无法移动到 TYPE_CHECKING，因为 Mapping 和 Sequence 在运行时被
+# RunnableConfigurableFields 需要
 from collections.abc import Mapping, Sequence  # noqa: TC003
 from functools import lru_cache
 from inspect import signature
@@ -25,7 +25,7 @@ from typing import (
 
 from typing_extensions import override
 
-# Re-export create-model for backwards compatibility
+# 为保持向后兼容性，重新导出 create-model
 from langchain_core.utils.pydantic import create_model  # noqa: F401
 
 if TYPE_CHECKING:
@@ -42,33 +42,33 @@ if TYPE_CHECKING:
     from langchain_core.runnables.schema import StreamEvent
 
 Input = TypeVar("Input", contravariant=True)  # noqa: PLC0105
-# Output type should implement __concat__, as eg str, list, dict do
+# 输出类型应实现 __concat__，如 str、list、dict
 Output = TypeVar("Output", covariant=True)  # noqa: PLC0105
 
 
 async def gated_coro(semaphore: asyncio.Semaphore, coro: Coroutine) -> Any:
-    """Run a coroutine with a semaphore.
+    """使用信号量运行协程。
 
-    Args:
-        semaphore: The semaphore to use.
-        coro: The coroutine to run.
+    参数:
+        semaphore: 要使用的信号量。
+        coro: 要运行的协程。
 
-    Returns:
-        The result of the coroutine.
+    返回:
+        协程的结果。
     """
     async with semaphore:
         return await coro
 
 
 async def gather_with_concurrency(n: int | None, *coros: Coroutine) -> list:
-    """Gather coroutines with a limit on the number of concurrent coroutines.
+    """限制并发协程数量来收集协程。
 
-    Args:
-        n: The number of coroutines to run concurrently.
-        *coros: The coroutines to run.
+    参数:
+        n: 同时运行的协程数量。
+        *coros: 要运行的协程。
 
-    Returns:
-        The results of the coroutines.
+    返回:
+        协程的结果列表。
     """
     if n is None:
         return await asyncio.gather(*coros)
@@ -79,13 +79,13 @@ async def gather_with_concurrency(n: int | None, *coros: Coroutine) -> list:
 
 
 def accepts_run_manager(callable: Callable[..., Any]) -> bool:  # noqa: A002
-    """Check if a callable accepts a run_manager argument.
+    """检查可调用对象是否接受 run_manager 参数。
 
-    Args:
-        callable: The callable to check.
+    参数:
+        callable: 要检查的可调用对象。
 
-    Returns:
-        `True` if the callable accepts a run_manager argument, `False` otherwise.
+    返回:
+        如果可调用对象接受 run_manager 参数则为 `True`，否则为 `False`。
     """
     try:
         return signature(callable).parameters.get("run_manager") is not None
@@ -94,13 +94,13 @@ def accepts_run_manager(callable: Callable[..., Any]) -> bool:  # noqa: A002
 
 
 def accepts_config(callable: Callable[..., Any]) -> bool:  # noqa: A002
-    """Check if a callable accepts a config argument.
+    """检查可调用对象是否接受 config 参数。
 
-    Args:
-        callable: The callable to check.
+    参数:
+        callable: 要检查的可调用对象。
 
-    Returns:
-        `True` if the callable accepts a config argument, `False` otherwise.
+    返回:
+        如果可调用对象接受 config 参数则为 `True`，否则为 `False`。
     """
     try:
         return signature(callable).parameters.get("config") is not None
@@ -109,13 +109,13 @@ def accepts_config(callable: Callable[..., Any]) -> bool:  # noqa: A002
 
 
 def accepts_context(callable: Callable[..., Any]) -> bool:  # noqa: A002
-    """Check if a callable accepts a context argument.
+    """检查可调用对象是否接受 context 参数。
 
-    Args:
-        callable: The callable to check.
+    参数:
+        callable: 要检查的可调用对象。
 
-    Returns:
-        `True` if the callable accepts a context argument, `False` otherwise.
+    返回:
+        如果可调用对象接受 context 参数则为 `True`，否则为 `False`。
     """
     try:
         return signature(callable).parameters.get("context") is not None
@@ -124,10 +124,10 @@ def accepts_context(callable: Callable[..., Any]) -> bool:  # noqa: A002
 
 
 def asyncio_accepts_context() -> bool:
-    """Check if asyncio.create_task accepts a `context` arg.
+    """检查 asyncio.create_task 是否接受 `context` 参数。
 
-    Returns:
-        True if `asyncio.create_task` accepts a context argument, `False` otherwise.
+    返回:
+        如果 `asyncio.create_task` 接受 context 参数则为 True，否则为 False。
     """
     return sys.version_info >= (3, 11)
 
@@ -138,15 +138,15 @@ _T = TypeVar("_T")
 def coro_with_context(
     coro: Awaitable[_T], context: Context, *, create_task: bool = False
 ) -> Awaitable[_T]:
-    """Await a coroutine with a context.
+    """使用上下文等待协程。
 
-    Args:
-        coro: The coroutine to await.
-        context: The context to use.
-        create_task: Whether to create a task.
+    参数:
+        coro: 要等待的协程。
+        context: 要使用的上下文。
+        create_task: 是否创建任务。
 
-    Returns:
-        The coroutine with the context.
+    返回:
+        带上下文的协程。
     """
     if asyncio_accepts_context():
         return asyncio.create_task(coro, context=context)  # type: ignore[arg-type,call-arg,unused-ignore]
@@ -156,24 +156,24 @@ def coro_with_context(
 
 
 class IsLocalDict(ast.NodeVisitor):
-    """Check if a name is a local dict."""
+    """检查名称是否是局部字典。"""
 
     def __init__(self, name: str, keys: set[str]) -> None:
-        """Initialize the visitor.
+        """初始化访问者。
 
-        Args:
-            name: The name to check.
-            keys: The keys to populate.
+        参数:
+            name: 要检查的名称。
+            keys: 要填充的键集合。
         """
         self.name = name
         self.keys = keys
 
     @override
     def visit_Subscript(self, node: ast.Subscript) -> None:
-        """Visit a subscript node.
+        """访问下标节点。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         if (
             isinstance(node.ctx, ast.Load)
@@ -182,15 +182,15 @@ class IsLocalDict(ast.NodeVisitor):
             and isinstance(node.slice, ast.Constant)
             and isinstance(node.slice.value, str)
         ):
-            # we've found a subscript access on the name we're looking for
+            # 找到了对目标名称的下标访问
             self.keys.add(node.slice.value)
 
     @override
     def visit_Call(self, node: ast.Call) -> None:
-        """Visit a call node.
+        """访问调用节点。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         if (
             isinstance(node.func, ast.Attribute)
@@ -201,23 +201,23 @@ class IsLocalDict(ast.NodeVisitor):
             and isinstance(node.args[0], ast.Constant)
             and isinstance(node.args[0].value, str)
         ):
-            # we've found a .get() call on the name we're looking for
+            # 找到了对目标名称的 .get() 调用
             self.keys.add(node.args[0].value)
 
 
 class IsFunctionArgDict(ast.NodeVisitor):
-    """Check if the first argument of a function is a dict."""
+    """检查函数的第一个参数是否是字典。"""
 
     def __init__(self) -> None:
-        """Create a IsFunctionArgDict visitor."""
+        """创建 IsFunctionArgDict 访问者。"""
         self.keys: set[str] = set()
 
     @override
     def visit_Lambda(self, node: ast.Lambda) -> None:
-        """Visit a lambda function.
+        """访问 lambda 函数。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         if not node.args.args:
             return
@@ -226,10 +226,10 @@ class IsFunctionArgDict(ast.NodeVisitor):
 
     @override
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        """Visit a function definition.
+        """访问函数定义。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         if not node.args.args:
             return
@@ -238,10 +238,10 @@ class IsFunctionArgDict(ast.NodeVisitor):
 
     @override
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        """Visit an async function definition.
+        """访问异步函数定义。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         if not node.args.args:
             return
@@ -250,19 +250,19 @@ class IsFunctionArgDict(ast.NodeVisitor):
 
 
 class NonLocals(ast.NodeVisitor):
-    """Get nonlocal variables accessed."""
+    """获取访问的非局部变量。"""
 
     def __init__(self) -> None:
-        """Create a NonLocals visitor."""
+        """创建 NonLocals 访问者。"""
         self.loads: set[str] = set()
         self.stores: set[str] = set()
 
     @override
     def visit_Name(self, node: ast.Name) -> None:
-        """Visit a name node.
+        """访问名称节点。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         if isinstance(node.ctx, ast.Load):
             self.loads.add(node.id)
@@ -271,10 +271,10 @@ class NonLocals(ast.NodeVisitor):
 
     @override
     def visit_Attribute(self, node: ast.Attribute) -> None:
-        """Visit an attribute node.
+        """访问属性节点。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         if isinstance(node.ctx, ast.Load):
             parent = node.value
@@ -302,18 +302,18 @@ class NonLocals(ast.NodeVisitor):
 
 
 class FunctionNonLocals(ast.NodeVisitor):
-    """Get the nonlocal variables accessed of a function."""
+    """获取函数访问的非局部变量。"""
 
     def __init__(self) -> None:
-        """Create a FunctionNonLocals visitor."""
+        """创建 FunctionNonLocals 访问者。"""
         self.nonlocals: set[str] = set()
 
     @override
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        """Visit a function definition.
+        """访问函数定义。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         visitor = NonLocals()
         visitor.visit(node)
@@ -321,10 +321,10 @@ class FunctionNonLocals(ast.NodeVisitor):
 
     @override
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        """Visit an async function definition.
+        """访问异步函数定义。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         visitor = NonLocals()
         visitor.visit(node)
@@ -332,10 +332,10 @@ class FunctionNonLocals(ast.NodeVisitor):
 
     @override
     def visit_Lambda(self, node: ast.Lambda) -> None:
-        """Visit a lambda function.
+        """访问 lambda 函数。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         visitor = NonLocals()
         visitor.visit(node)
@@ -343,19 +343,19 @@ class FunctionNonLocals(ast.NodeVisitor):
 
 
 class GetLambdaSource(ast.NodeVisitor):
-    """Get the source code of a lambda function."""
+    """获取 lambda 函数的源代码。"""
 
     def __init__(self) -> None:
-        """Initialize the visitor."""
+        """初始化访问者。"""
         self.source: str | None = None
         self.count = 0
 
     @override
     def visit_Lambda(self, node: ast.Lambda) -> None:
-        """Visit a lambda function.
+        """访问 lambda 函数。
 
-        Args:
-            node: The node to visit.
+        参数:
+            node: 要访问的节点。
         """
         self.count += 1
         if hasattr(ast, "unparse"):
@@ -363,13 +363,13 @@ class GetLambdaSource(ast.NodeVisitor):
 
 
 def get_function_first_arg_dict_keys(func: Callable) -> list[str] | None:
-    """Get the keys of the first argument of a function if it is a dict.
+    """如果函数的第一个参数是字典，则获取其键。
 
-    Args:
-        func: The function to check.
+    参数:
+        func: 要检查的函数。
 
-    Returns:
-        The keys of the first argument if it is a dict, None otherwise.
+    返回:
+        如果第一个参数是字典则返回其键，否则返回 None。
     """
     try:
         code = inspect.getsource(func)
@@ -382,13 +382,13 @@ def get_function_first_arg_dict_keys(func: Callable) -> list[str] | None:
 
 
 def get_lambda_source(func: Callable) -> str | None:
-    """Get the source code of a lambda function.
+    """获取 lambda 函数的源代码。
 
-    Args:
-        func: a Callable that can be a lambda function.
+    参数:
+        func: 可以是 lambda 函数的可调用对象。
 
-    Returns:
-        the source code of the lambda function.
+    返回:
+        lambda 函数的源代码。
     """
     try:
         name = func.__name__ if func.__name__ != "<lambda>" else None
@@ -406,13 +406,13 @@ def get_lambda_source(func: Callable) -> str | None:
 
 @lru_cache(maxsize=256)
 def get_function_nonlocals(func: Callable) -> list[Any]:
-    """Get the nonlocal variables accessed by a function.
+    """获取函数访问的非局部变量。
 
-    Args:
-        func: The function to check.
+    参数:
+        func: 要检查的函数。
 
-    Returns:
-        The nonlocal variables accessed by the function.
+    返回:
+        函数访问的非局部变量列表。
     """
     try:
         code = inspect.getsource(func)
@@ -448,14 +448,14 @@ def get_function_nonlocals(func: Callable) -> list[Any]:
 
 
 def indent_lines_after_first(text: str, prefix: str) -> str:
-    """Indent all lines of text after the first line.
+    """缩进第一行之后的所有文本行。
 
-    Args:
-        text: The text to indent.
-        prefix: Used to determine the number of spaces to indent.
+    参数:
+        text: 要缩进的文本。
+        prefix: 用于确定缩进空格数。
 
-    Returns:
-        The indented text.
+    返回:
+        缩进后的文本。
     """
     n_spaces = len(prefix)
     spaces = " " * n_spaces
@@ -464,16 +464,16 @@ def indent_lines_after_first(text: str, prefix: str) -> str:
 
 
 class AddableDict(dict[str, Any]):
-    """Dictionary that can be added to another dictionary."""
+    """可添加到另一个字典的字典（可添加字典）。"""
 
     def __add__(self, other: AddableDict) -> AddableDict:
-        """Add a dictionary to this dictionary.
+        """将另一个字典添加到此字典。
 
-        Args:
-            other: The other dictionary to add.
+        参数:
+            other: 要添加的另一个字典。
 
-        Returns:
-            A dictionary that is the result of adding the two dictionaries.
+        返回:
+            两个字典相加的结果字典。
         """
         chunk = AddableDict(self)
         for key in other:
@@ -488,13 +488,13 @@ class AddableDict(dict[str, Any]):
         return chunk
 
     def __radd__(self, other: AddableDict) -> AddableDict:
-        """Add this dictionary to another dictionary.
+        """将此字典添加到另一个字典。
 
-        Args:
-            other: The other dictionary to be added to.
+        参数:
+            other: 要被添加到的另一个字典。
 
-        Returns:
-            A dictionary that is the result of adding the two dictionaries.
+        返回:
+            两个字典相加的结果字典。
         """
         chunk = AddableDict(other)
         for key in self:
@@ -514,23 +514,23 @@ _T_contra = TypeVar("_T_contra", contravariant=True)
 
 
 class SupportsAdd(Protocol[_T_contra, _T_co]):
-    """Protocol for objects that support addition."""
+    """支持加法的对象的协议。"""
 
     def __add__(self, x: _T_contra, /) -> _T_co:
-        """Add the object to another object."""
+        """将对象添加到另一个对象。"""
 
 
 Addable = TypeVar("Addable", bound=SupportsAdd[Any, Any])
 
 
 def add(addables: Iterable[Addable]) -> Addable | None:
-    """Add a sequence of addable objects together.
+    """将一系列可添加对象相加。
 
-    Args:
-        addables: The addable objects to add.
+    参数:
+        addables: 要添加的可添加对象。
 
-    Returns:
-        The result of adding the addable objects.
+    返回:
+        添加可添加对象的结果。
     """
     final: Addable | None = None
     for chunk in addables:
@@ -539,13 +539,13 @@ def add(addables: Iterable[Addable]) -> Addable | None:
 
 
 async def aadd(addables: AsyncIterable[Addable]) -> Addable | None:
-    """Asynchronously add a sequence of addable objects together.
+    """异步将一系列可添加对象相加。
 
-    Args:
-        addables: The addable objects to add.
+    参数:
+        addables: 要添加的可添加对象。
 
-    Returns:
-        The result of adding the addable objects.
+    返回:
+        添加可添加对象的结果。
     """
     final: Addable | None = None
     async for chunk in addables:
@@ -554,22 +554,22 @@ async def aadd(addables: AsyncIterable[Addable]) -> Addable | None:
 
 
 class ConfigurableField(NamedTuple):
-    """Field that can be configured by the user."""
+    """可由用户配置的字段（可配置字段）。"""
 
     id: str
-    """The unique identifier of the field."""
+    """字段的唯一标识符。"""
 
     name: str | None = None
-    """The name of the field. """
+    """字段的名称。"""
 
     description: str | None = None
-    """The description of the field. """
+    """字段的描述。"""
 
     annotation: Any | None = None
-    """The annotation of the field. """
+    """字段的注解。"""
 
     is_shared: bool = False
-    """Whether the field is shared."""
+    """字段是否是共享的。"""
 
     @override
     def __hash__(self) -> int:
@@ -577,25 +577,25 @@ class ConfigurableField(NamedTuple):
 
 
 class ConfigurableFieldSingleOption(NamedTuple):
-    """Field that can be configured by the user with a default value."""
+    """可由用户配置且具有默认值的字段（单选项可配置字段）。"""
 
     id: str
-    """The unique identifier of the field."""
+    """字段的唯一标识符。"""
 
     options: Mapping[str, Any]
-    """The options for the field."""
+    """字段的选项。"""
 
     default: str
-    """The default value for the field."""
+    """字段的默认值。"""
 
     name: str | None = None
-    """The name of the field. """
+    """字段的名称。"""
 
     description: str | None = None
-    """The description of the field. """
+    """字段的描述。"""
 
     is_shared: bool = False
-    """Whether the field is shared."""
+    """字段是否是共享的。"""
 
     @override
     def __hash__(self) -> int:
@@ -603,25 +603,25 @@ class ConfigurableFieldSingleOption(NamedTuple):
 
 
 class ConfigurableFieldMultiOption(NamedTuple):
-    """Field that can be configured by the user with multiple default values."""
+    """可由用户配置且具有多个默认值的字段（多选项可配置字段）。"""
 
     id: str
-    """The unique identifier of the field."""
+    """字段的唯一标识符。"""
 
     options: Mapping[str, Any]
-    """The options for the field."""
+    """字段的选项。"""
 
     default: Sequence[str]
-    """The default values for the field."""
+    """字段的默认值列表。"""
 
     name: str | None = None
-    """The name of the field. """
+    """字段的名称。"""
 
     description: str | None = None
-    """The description of the field. """
+    """字段的描述。"""
 
     is_shared: bool = False
-    """Whether the field is shared."""
+    """字段是否是共享的。"""
 
     @override
     def __hash__(self) -> int:
@@ -634,43 +634,43 @@ AnyConfigurableField = (
 
 
 class ConfigurableFieldSpec(NamedTuple):
-    """Field that can be configured by the user. It is a specification of a field."""
+    """可由用户配置的字段的规范（可配置字段规范）。"""
 
     id: str
-    """The unique identifier of the field."""
+    """字段的唯一标识符。"""
 
     annotation: Any
-    """The annotation of the field."""
+    """字段的注解。"""
 
     name: str | None = None
-    """The name of the field. """
+    """字段的名称。"""
 
     description: str | None = None
-    """The description of the field. """
+    """字段的描述。"""
 
     default: Any = None
-    """The default value for the field. """
+    """字段的默认值。"""
 
     is_shared: bool = False
-    """Whether the field is shared."""
+    """字段是否是共享的。"""
 
     dependencies: list[str] | None = None
-    """The dependencies of the field. """
+    """字段的依赖项。"""
 
 
 def get_unique_config_specs(
     specs: Iterable[ConfigurableFieldSpec],
 ) -> list[ConfigurableFieldSpec]:
-    """Get the unique config specs from a sequence of config specs.
+    """从配置规范序列中获取唯一的配置规范。
 
-    Args:
-        specs: The config specs.
+    参数:
+        specs: 配置规范。
 
-    Returns:
-        The unique config specs.
+    返回:
+        唯一的配置规范列表。
 
-    Raises:
-        ValueError: If the runnable sequence contains conflicting config specs.
+    异常:
+        ValueError: 如果可运行单元序列包含冲突的配置规范。
     """
     grouped = groupby(
         sorted(specs, key=lambda s: (s.id, *(s.dependencies or []))), lambda s: s.id
@@ -701,10 +701,9 @@ class _RootEventFilter:
         exclude_types: Sequence[str] | None = None,
         exclude_tags: Sequence[str] | None = None,
     ) -> None:
-        """Utility to filter the root event in the astream_events implementation.
+        """在 astream_events 实现中过滤根事件的工具。
 
-        This is simply binding the arguments to the namespace to make save on
-        a bit of typing in the astream_events implementation.
+        这只是将参数绑定到命名空间，以在 astream_events 实现中节省一些输入。
         """
         self.include_names = include_names
         self.include_types = include_types
@@ -714,7 +713,7 @@ class _RootEventFilter:
         self.exclude_tags = exclude_tags
 
     def include_event(self, event: StreamEvent, root_type: str) -> bool:
-        """Determine whether to include an event."""
+        """确定是否包含事件。"""
         if (
             self.include_names is None
             and self.include_types is None
@@ -748,13 +747,13 @@ class _RootEventFilter:
 def is_async_generator(
     func: Any,
 ) -> TypeGuard[Callable[..., AsyncIterator]]:
-    """Check if a function is an async generator.
+    """检查函数是否是异步生成器。
 
-    Args:
-        func: The function to check.
+    参数:
+        func: 要检查的函数。
 
-    Returns:
-        `True` if the function is an async generator, `False` otherwise.
+    返回:
+        如果函数是异步生成器则为 `True`，否则为 `False`。
     """
     return inspect.isasyncgenfunction(func) or (
         hasattr(func, "__call__")  # noqa: B004
@@ -765,13 +764,13 @@ def is_async_generator(
 def is_async_callable(
     func: Any,
 ) -> TypeGuard[Callable[..., Awaitable]]:
-    """Check if a function is async.
+    """检查函数是否是异步的。
 
-    Args:
-        func: The function to check.
+    参数:
+        func: 要检查的函数。
 
-    Returns:
-        `True` if the function is async, `False` otherwise.
+    返回:
+        如果函数是异步的则为 `True`，否则为 `False`。
     """
     return asyncio.iscoroutinefunction(func) or (
         hasattr(func, "__call__")  # noqa: B004
